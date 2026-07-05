@@ -13,6 +13,9 @@ export const isDemoMode = !API_BASE
 
 const REQUESTS_KEY = 'demo_service_requests'
 const SESSION_KEY = 'demo_portal_session'
+const CUSTOMERS_KEY = 'demo_customers'
+const ADMIN_SESSION_KEY = 'demo_admin_session'
+const ADMIN_DEMO_CODE = import.meta.env.VITE_ADMIN_DEMO_CODE || 'evmaster-admin'
 
 function demoDelay(value) {
   return new Promise((resolve) => setTimeout(() => resolve(value), 350))
@@ -73,6 +76,33 @@ export async function login(email, password) {
   return session
 }
 
+function readDemoCustomers() {
+  try { return JSON.parse(localStorage.getItem(CUSTOMERS_KEY)) || [] } catch { return [] }
+}
+function writeDemoCustomers(list) {
+  localStorage.setItem(CUSTOMERS_KEY, JSON.stringify(list))
+}
+
+export async function register({ name, email, phone, password }) {
+  if (isDemoMode) {
+    const customers = readDemoCustomers()
+    if (customers.some((c) => c.email === email)) {
+      throw new Error('An account with that email already exists.')
+    }
+    customers.push({ name, email, phone, createdAt: new Date().toISOString() })
+    writeDemoCustomers(customers)
+    const session = { token: 'demo-token', email, name }
+    localStorage.setItem(SESSION_KEY, JSON.stringify(session))
+    return demoDelay(session)
+  }
+  const session = await request('/auth/register', {
+    method: 'POST',
+    body: JSON.stringify({ name, email, phone, password }),
+  })
+  localStorage.setItem(SESSION_KEY, JSON.stringify(session))
+  return session
+}
+
 // Submits a service request. `type` is 'booking' or 'remote-programming'.
 export async function submitServiceRequest(payload) {
   if (isDemoMode) {
@@ -100,4 +130,54 @@ export async function getMyRequests() {
     return demoDelay(list)
   }
   return request('/customer/requests')
+}
+
+// --- Admin ---
+
+export function getAdminSession() {
+  try { return JSON.parse(localStorage.getItem(ADMIN_SESSION_KEY)) } catch { return null }
+}
+export function adminLogout() { localStorage.removeItem(ADMIN_SESSION_KEY) }
+
+function adminAuthHeaders() {
+  const s = getAdminSession()
+  return s?.token ? { Authorization: `Bearer ${s.token}` } : {}
+}
+
+async function adminRequest(path, options = {}) {
+  const res = await fetch(`${API_BASE}${path}`, {
+    ...options,
+    headers: { 'Content-Type': 'application/json', ...adminAuthHeaders(), ...options.headers },
+  })
+  if (!res.ok) throw new Error((await res.text().catch(() => '')) || `Request failed (${res.status})`)
+  return res.status === 204 ? null : res.json()
+}
+
+export async function adminLogin(code) {
+  if (isDemoMode) {
+    if (code !== ADMIN_DEMO_CODE) throw new Error('Incorrect access code.')
+    const session = { token: 'demo-admin-token' }
+    localStorage.setItem(ADMIN_SESSION_KEY, JSON.stringify(session))
+    return demoDelay(session)
+  }
+  const session = await request('/admin/login', { method: 'POST', body: JSON.stringify({ code }) })
+  localStorage.setItem(ADMIN_SESSION_KEY, JSON.stringify(session))
+  return session
+}
+
+export async function getAllRequests() {
+  if (isDemoMode) return demoDelay(readDemoRequests())
+  return adminRequest('/admin/requests')
+}
+
+export async function updateRequestStatus(id, status) {
+  if (isDemoMode) {
+    const list = readDemoRequests()
+    const idx = list.findIndex((r) => r.id === id)
+    if (idx === -1) throw new Error('Request not found.')
+    list[idx] = { ...list[idx], status }
+    writeDemoRequests(list)
+    return demoDelay(list[idx])
+  }
+  return adminRequest(`/admin/requests/${id}`, { method: 'PATCH', body: JSON.stringify({ status }) })
 }

@@ -29,7 +29,7 @@ function About() {
             <span className="eyebrow">Our story</span>
             <h1>Built for Jordan's electric shift</h1>
             <p className="muted">
-              As EVs became a real part of daily driving in Amman, we saw the gap: garages built
+              As EVs became a real part of daily driving in Jordan, we saw the gap: garages built
               around combustion engines, adapting as they went. {shop.name} exists to close that
               gap - a workshop built around electric vehicles from day one.
             </p>
@@ -43,7 +43,7 @@ function About() {
               <span className="eyebrow">Our mission</span>
               <h2>Keep Jordan's EVs running with confidence</h2>
               <p className="muted">
-                We started {shop.name} to give EV owners in Amman a place that understands their
+                We started {shop.name} to give EV owners in Jordan a place that understands their
                 car properly - high-voltage safety, battery chemistry, and the software that runs
                 underneath it all. No guesswork, no combustion-era habits applied where they
                 don't belong.

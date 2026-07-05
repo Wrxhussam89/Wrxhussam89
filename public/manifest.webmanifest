@@ -1,0 +1,11 @@
+{
+  "name": "EV Master JO",
+  "short_name": "EV Master JO",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#f7f8fa",
+  "theme_color": "#0a8f5b",
+  "icons": [
+    { "src": "/logo.png", "sizes": "512x512", "type": "image/png", "purpose": "any" }
+  ]
+}

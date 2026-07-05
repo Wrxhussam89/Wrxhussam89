@@ -1,7 +1,7 @@
 // Edit this file to update your shop's info across the whole site.
 export const shop = {
   name: 'EV Master JO',
-  tagline: "Amman's dedicated electric vehicle service center",
+  tagline: "Jordan's dedicated electric vehicle service center",
   phone: '07 9015 9090',
   phoneHref: 'tel:+96279015909',
   whatsapp: 'https://wa.me/962790159090',

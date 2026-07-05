@@ -7,7 +7,7 @@ function Home() {
       <section className="hero-section">
         <div className="container hero-grid">
           <div>
-            <span className="eyebrow">Amman's EV Specialists</span>
+            <span className="eyebrow">Jordan's EV Specialists</span>
             <h1>{shop.tagline}</h1>
             <p className="muted">
               From battery diagnostics to charging system repair, {shop.name} keeps your
