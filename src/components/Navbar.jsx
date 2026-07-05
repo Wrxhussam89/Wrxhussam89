@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { NavLink } from 'react-router-dom'
 import { shop } from '../siteConfig'
+import logo from '../assets/logo.png'
 
 const links = [
   { to: '/', label: 'Home' },
@@ -18,8 +19,7 @@ function Navbar() {
     <header className="navbar">
       <div className="navbar-inner">
         <NavLink to="/" className="brand" onClick={() => setOpen(false)}>
-          <span className="brand-bolt">⚡</span>
-          <span>{shop.name}</span>
+          <img src={logo} alt={shop.name} className="brand-logo" />
         </NavLink>
 
         <button
@@ -46,6 +46,11 @@ function Navbar() {
             </NavLink>
           ))}
         </nav>
+
+        <div className="header-actions">
+          <a href={shop.phoneHref} className="btn btn-outline">Call Now</a>
+          <a href={shop.whatsapp} target="_blank" rel="noreferrer" className="btn btn-primary">WhatsApp</a>
+        </div>
       </div>
     </header>
   )

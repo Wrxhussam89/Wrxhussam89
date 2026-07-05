@@ -1,4 +1,24 @@
 import { shop } from '../siteConfig'
+import logo from '../assets/logo.png'
+
+const values = [
+  {
+    title: 'Safety first, always',
+    desc: 'High-voltage systems demand respect - every technician is trained in EV-specific safety procedures before touching a battery pack.',
+  },
+  {
+    title: 'Diagnose before we touch anything',
+    desc: 'We use OEM-grade diagnostic tools to confirm the actual fault, rather than swapping parts and hoping.',
+  },
+  {
+    title: 'Straight answers',
+    desc: "You'll know what's wrong, what it costs, and why - before any work begins.",
+  },
+  {
+    title: 'Your time matters',
+    desc: 'Pickup and delivery across Amman means keeping your car in our shop, not you in our waiting room.',
+  },
+]
 
 function About() {
   return (
@@ -6,30 +26,47 @@ function About() {
       <section className="block">
         <div className="container">
           <div className="section-head">
-            <h1>About {shop.name}</h1>
+            <span className="eyebrow">Our story</span>
+            <h1>Built for Jordan's electric shift</h1>
             <p className="muted">
-              We're an independent workshop focused entirely on electric vehicles - no gas
-              engines, no guesswork, just technicians who know EVs inside and out.
+              As EVs became a real part of daily driving in Amman, we saw the gap: garages built
+              around combustion engines, adapting as they went. {shop.name} exists to close that
+              gap - a workshop built around electric vehicles from day one.
             </p>
           </div>
 
-          <div className="grid grid-2">
-            <div className="card">
-              <h3>Why Choose Us</h3>
+          <div className="grid grid-2" style={{ alignItems: 'center', marginBottom: 48 }}>
+            <div className="text-center">
+              <img src={logo} alt={shop.name} style={{ maxWidth: '60%', height: 'auto' }} />
+            </div>
+            <div>
+              <span className="eyebrow">Our mission</span>
+              <h2>Keep Jordan's EVs running with confidence</h2>
               <p className="muted">
-                Every technician on our floor is trained specifically on high-voltage systems,
-                battery packs, and EV drivetrains. We invest in manufacturer-grade diagnostic
-                tools so your vehicle is diagnosed correctly the first time.
+                We started {shop.name} to give EV owners in Amman a place that understands their
+                car properly - high-voltage safety, battery chemistry, and the software that runs
+                underneath it all. No guesswork, no combustion-era habits applied where they
+                don't belong.
+              </p>
+              <p className="muted">
+                Every job that comes through our Bayader Industrial Area workshop is handled by
+                technicians trained specifically for electric drivetrains, with diagnostic tools
+                built for the job.
               </p>
             </div>
-            <div className="card">
-              <h3>Our Hours</h3>
-              {shop.hours.map((h) => (
-                <p key={h.day} className="muted">
-                  <strong style={{ color: 'var(--text-h)' }}>{h.day}:</strong> {h.time}
-                </p>
-              ))}
-            </div>
+          </div>
+
+          <div className="section-head">
+            <span className="eyebrow">What we stand for</span>
+            <h2>The principles behind every job</h2>
+          </div>
+          <div className="grid grid-2">
+            {values.map((v) => (
+              <div className="card" key={v.title}>
+                <h3>{v.title}</h3>
+                <p className="muted">{v.desc}</p>
+              </div>
+            ))}
           </div>
         </div>
       </section>

@@ -1,15 +1,22 @@
 // Edit this file to update your shop's info across the whole site.
 export const shop = {
-  name: 'Volt & Wrench EV Garage',
-  tagline: 'Independent electric vehicle repair, service & conversions',
-  phone: '(555) 019-4420',
-  phoneHref: 'tel:+15550194420',
-  email: 'hello@voltandwrench.example',
-  address: '128 Amp Street, Springfield, ST 00000',
+  name: 'EV Master JO',
+  tagline: "Amman's dedicated electric vehicle service center",
+  phone: '07 9015 9090',
+  phoneHref: 'tel:+96279015909',
+  whatsapp: 'https://wa.me/962790159090',
+  email: 'info@evmasterjo.com',
+  address: 'Siwar Bin Amara Street, Bayader Industrial Area (behind Hikma Factory), Amman, Jordan',
+  mapEmbedUrl:
+    'https://www.google.com/maps?q=Siwar+Bin+Amara+St,+Bayader+Industrial+Area,+Amman,+Jordan&output=embed',
   hours: [
-    { day: 'Monday – Friday', time: '8:00 AM – 6:00 PM' },
-    { day: 'Saturday', time: '9:00 AM – 3:00 PM' },
-    { day: 'Sunday', time: 'Closed' },
+    { day: 'Sunday', time: '9:00 AM – 6:00 PM' },
+    { day: 'Monday', time: '9:00 AM – 6:00 PM' },
+    { day: 'Tuesday', time: '9:00 AM – 6:00 PM' },
+    { day: 'Wednesday', time: '9:00 AM – 6:00 PM' },
+    { day: 'Thursday', time: '9:00 AM – 6:00 PM' },
+    { day: 'Friday', time: 'Closed' },
+    { day: 'Saturday', time: '9:00 AM – 2:00 PM' },
   ],
   social: {
     facebook: '',
@@ -19,33 +26,38 @@ export const shop = {
 
 export const services = [
   {
-    title: 'Battery Diagnostics & Repair',
-    desc: 'High-voltage battery health checks, cell balancing, and pack repair for all major EV brands.',
-    icon: '🔋',
-  },
-  {
-    title: 'Charging System Service',
-    desc: 'On-board charger, DC fast-charge port, and home charging station installation & troubleshooting.',
-    icon: '⚡',
-  },
-  {
-    title: 'Motor & Drivetrain',
-    desc: 'Electric motor inspection, inverter diagnostics, and drivetrain maintenance to keep you moving.',
+    title: 'Periodic Maintenance',
+    desc: 'Manufacturer-interval checkups covering brakes, suspension, cooling systems, cabin filters and 12V auxiliary battery - adjusted for regenerative braking wear patterns.',
     icon: '⚙️',
   },
   {
+    title: 'Battery Health Diagnostics',
+    desc: "Cell-level voltage and temperature analysis with a full state-of-health report, so you know your pack's real range and degradation before it becomes a problem.",
+    icon: '🔋',
+  },
+  {
     title: 'Software & Firmware Updates',
-    desc: 'ECU diagnostics and manufacturer firmware updates to keep your EV running its best.',
+    desc: 'Manual ECU and infotainment updates for vehicles that miss OTA updates, plus troubleshooting for software-related faults and error codes.',
     icon: '💻',
   },
   {
+    title: 'Charging System Repair',
+    desc: 'Diagnostics and repair for onboard chargers, charge ports and cables - for slow-charging faults, intermittent connection issues, or no-charge conditions.',
+    icon: '⚡',
+  },
+  {
     title: 'Brakes, Tires & Suspension',
-    desc: 'Regenerative-brake-aware service, tire rotation, and suspension work tailored to EVs.',
+    desc: 'Regen-aware brake service, tire rotation and alignment, and suspension work suited to the extra weight and torque of electric drivetrains.',
     icon: '🛞',
   },
   {
-    title: 'Gas-to-Electric Conversions',
-    desc: 'Custom conversion projects turning classic and modern vehicles fully electric.',
-    icon: '🔧',
+    title: 'Recovery & Roadside Assistance',
+    desc: "Flatbed recovery for EVs that can't be towed conventionally, plus roadside support for charging or battery-related breakdowns across Amman.",
+    icon: '🚛',
+  },
+  {
+    title: 'Pickup & Delivery',
+    desc: 'We collect your car from home or work and bring it back once service is complete - free within Amman.',
+    icon: '🚚',
   },
 ]
