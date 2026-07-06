@@ -7,11 +7,11 @@ function Home() {
       <section className="hero-section">
         <div className="container hero-grid">
           <div>
-            <span className="eyebrow">Independent EV Specialists</span>
+            <span className="eyebrow">Jordan's EV Specialists</span>
             <h1>{shop.tagline}</h1>
             <p className="muted">
-              From battery diagnostics to full gas-to-electric conversions, {shop.name} keeps
-              your electric vehicle running at its best - in the shop or fully remote.
+              From battery diagnostics to charging system repair, {shop.name} keeps your
+              electric vehicle running at its best - in the shop or fully remote.
             </p>
             <div className="hero-actions">
               <Link to="/booking" className="btn btn-primary">Book a Service</Link>
@@ -28,6 +28,10 @@ function Home() {
               <li>
                 <strong>📞</strong>
                 <a href={shop.phoneHref}>{shop.phone}</a>
+              </li>
+              <li>
+                <strong>💬</strong>
+                <a href={shop.whatsapp} target="_blank" rel="noreferrer">WhatsApp</a>
               </li>
               <li>
                 <strong>✉️</strong>

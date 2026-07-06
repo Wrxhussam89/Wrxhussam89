@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { getSession, login, logout, getMyRequests, isDemoMode } from '../api/client'
+import { getSession, login, register, logout, getMyRequests, isDemoMode } from '../api/client'
 
 function statusClass(status) {
   const s = (status || '').toLowerCase()
@@ -34,12 +34,10 @@ function LoginForm({ onLoggedIn }) {
 
   return (
     <form className="form-card" onSubmit={handleSubmit} noValidate>
-      <h2>Customer Portal Sign In</h2>
       {isDemoMode && (
         <div className="notice">
-          <strong>Demo mode:</strong> no ERP/backend connected yet - enter any email and password
-          to preview the portal. Requests submitted from this browser under the same email will
-          show up below.
+          <strong>Demo mode:</strong> no backend connected yet — enter any email and password
+          to preview the portal.
         </div>
       )}
       <div className="form-row">
@@ -55,6 +53,86 @@ function LoginForm({ onLoggedIn }) {
         {loading ? 'Signing in...' : 'Sign In'}
       </button>
     </form>
+  )
+}
+
+function SignUpForm({ onDone }) {
+  const [name, setName] = useState('')
+  const [email, setEmail] = useState('')
+  const [phone, setPhone] = useState('')
+  const [password, setPassword] = useState('')
+  const [error, setError] = useState('')
+  const [loading, setLoading] = useState(false)
+
+  async function handleSubmit(e) {
+    e.preventDefault()
+    setError('')
+    if (!name.trim() || !email.trim() || !phone.trim() || !password.trim()) {
+      setError('All fields are required.')
+      return
+    }
+    setLoading(true)
+    try {
+      await register({ name: name.trim(), email: email.trim(), phone: phone.trim(), password })
+      onDone()
+    } catch (err) {
+      setError(err.message || 'Could not create account.')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  return (
+    <form className="form-card" onSubmit={handleSubmit} noValidate>
+      {isDemoMode && (
+        <div className="notice">
+          <strong>Demo mode:</strong> no backend connected yet — accounts are stored in your
+          browser only.
+        </div>
+      )}
+      <div className="form-row">
+        <label htmlFor="reg-name">Full Name</label>
+        <input id="reg-name" type="text" value={name} onChange={(e) => setName(e.target.value)} />
+      </div>
+      <div className="form-row">
+        <label htmlFor="reg-email">Email Address</label>
+        <input id="reg-email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} />
+      </div>
+      <div className="form-row">
+        <label htmlFor="reg-phone">Phone Number</label>
+        <input id="reg-phone" type="tel" value={phone} onChange={(e) => setPhone(e.target.value)} />
+      </div>
+      <div className="form-row">
+        <label htmlFor="reg-password">Password</label>
+        <input id="reg-password" type="password" value={password} onChange={(e) => setPassword(e.target.value)} />
+      </div>
+      {error && <div className="form-error">{error}</div>}
+      <button type="submit" className="btn btn-primary" disabled={loading} style={{ width: '100%' }}>
+        {loading ? 'Creating account...' : 'Create Account'}
+      </button>
+    </form>
+  )
+}
+
+function AuthPanel({ onAuthed }) {
+  const [tab, setTab] = useState('login')
+
+  return (
+    <>
+      <div className="tabs">
+        <button className={`tab ${tab === 'login' ? 'active' : ''}`} onClick={() => setTab('login')}>
+          Sign In
+        </button>
+        <button className={`tab ${tab === 'signup' ? 'active' : ''}`} onClick={() => setTab('signup')}>
+          Create Account
+        </button>
+      </div>
+      {tab === 'login' ? (
+        <LoginForm onLoggedIn={onAuthed} />
+      ) : (
+        <SignUpForm onDone={onAuthed} />
+      )}
+    </>
   )
 }
 
@@ -141,7 +219,7 @@ function Portal() {
               <h1>Customer Portal</h1>
               <p className="muted">Track your service and remote programming requests in one place.</p>
             </div>
-            <LoginForm onLoggedIn={() => setSession(getSession())} />
+            <AuthPanel onAuthed={() => setSession(getSession())} />
           </div>
         )}
       </section>

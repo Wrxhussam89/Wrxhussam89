@@ -9,17 +9,15 @@ function RemoteProgramming() {
             <span className="badge">Remote Service</span>
             <h1>Remote Online Programming</h1>
             <p className="muted">
-              Need ECU, module, or key programming done remotely? Submit your vehicle details
-              below and one of our technicians will schedule a remote programming session with
-              you.
+              Submit your vehicle details and we'll schedule a remote ECU, module, or key
+              programming session with you.
             </p>
           </div>
 
           <div className="notice" style={{ maxWidth: 640, margin: '0 auto 24px' }}>
-            <strong>How this works:</strong> all remote programming requests are handled through
-            this form only - we do not offer support over WhatsApp or other messaging apps.
-            Please provide accurate contact and vehicle information, including your VIN, so we
-            can prepare the correct programming files before contacting you.
+            <strong>How this works:</strong> form-only intake — we don't offer WhatsApp support
+            for remote programming. Include an accurate VIN so we can prepare the right files
+            before we contact you.
           </div>
 
           <ServiceRequestForm type="remote-programming" requireVin showPreferredDate={false} />
