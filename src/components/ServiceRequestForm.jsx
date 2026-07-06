@@ -17,30 +17,6 @@ const initialState = {
   notes: '',
 }
 
-function BrandPicker({ selected, onSelect }) {
-  return (
-    <div className="brand-picker">
-      <label>Select Your Car Brand</label>
-      <div className="brand-grid">
-        {carBrands.map((brand) => (
-          <button
-            key={brand.name}
-            type="button"
-            className={`brand-card${selected === brand.name ? ' active' : ''}`}
-            onClick={() => onSelect(brand.name)}
-          >
-            <span
-              className="brand-card-logo"
-              dangerouslySetInnerHTML={{ __html: brand.svg }}
-            />
-            <span className="brand-card-name">{brand.name}</span>
-          </button>
-        ))}
-      </div>
-    </div>
-  )
-}
-
 function ServiceRequestForm({ type, requireVin = false, showPreferredDate = false }) {
   const [values, setValues] = useState(initialState)
   const [errors, setErrors] = useState({})
@@ -55,8 +31,8 @@ function ServiceRequestForm({ type, requireVin = false, showPreferredDate = fals
     setValues((v) => ({ ...v, [field]: value }))
   }
 
-  function handleBrandSelect(brandName) {
-    setValues((v) => ({ ...v, carMake: brandName, carModel: '' }))
+  function handleBrandChange(e) {
+    setValues((v) => ({ ...v, carMake: e.target.value, carModel: '' }))
   }
 
   function validate() {
@@ -139,10 +115,15 @@ function ServiceRequestForm({ type, requireVin = false, showPreferredDate = fals
         </div>
       </div>
 
-      <BrandPicker selected={values.carMake} onSelect={handleBrandSelect} />
-      {errors.carMake && <div className="form-error" style={{ marginTop: 4 }}>{errors.carMake}</div>}
-
-      <div className="form-row-2" style={{ marginTop: 18 }}>
+      <div className="form-row-2">
+        <div className="form-row">
+          <label htmlFor="carMake">Car Brand</label>
+          <select id="carMake" value={values.carMake} onChange={handleBrandChange}>
+            <option value="">Select brand...</option>
+            {carBrands.map((b) => <option key={b.name} value={b.name}>{b.name}</option>)}
+          </select>
+          {errors.carMake && <div className="form-error">{errors.carMake}</div>}
+        </div>
         <div className="form-row">
           <label htmlFor="carModel">Car Model</label>
           {values.carMake === 'Other' || modelOptions.length === 0 ? (
@@ -170,23 +151,25 @@ function ServiceRequestForm({ type, requireVin = false, showPreferredDate = fals
           )}
           {errors.carModel && <div className="form-error">{errors.carModel}</div>}
         </div>
+      </div>
+
+      <div className="form-row-2">
         <div className="form-row">
           <label htmlFor="carYear">Car Year</label>
           <input id="carYear" type="text" placeholder="e.g. 2022" value={values.carYear} onChange={(e) => update('carYear', e.target.value)} />
         </div>
-      </div>
-
-      <div className="form-row">
-        <label htmlFor="vin">VIN (Vehicle Identification Number){requireVin ? '' : ' - optional'}</label>
-        <input
-          id="vin"
-          type="text"
-          maxLength={17}
-          placeholder="17-character VIN"
-          value={values.vin}
-          onChange={(e) => update('vin', e.target.value.toUpperCase())}
-        />
-        {errors.vin && <div className="form-error">{errors.vin}</div>}
+        <div className="form-row">
+          <label htmlFor="vin">VIN{requireVin ? '' : ' - optional'}</label>
+          <input
+            id="vin"
+            type="text"
+            maxLength={17}
+            placeholder="17-character VIN"
+            value={values.vin}
+            onChange={(e) => update('vin', e.target.value.toUpperCase())}
+          />
+          {errors.vin && <div className="form-error">{errors.vin}</div>}
+        </div>
       </div>
 
       {showPreferredDate && (
