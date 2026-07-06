@@ -368,7 +368,7 @@ section.block {
   border: 1px solid var(--border);
   border-radius: 16px;
   padding: 32px;
-  max-width: 640px;
+  max-width: 780px;
   margin: 0 auto;
   box-shadow: var(--shadow);
 }
@@ -519,22 +519,22 @@ textarea { resize: vertical; min-height: 100px; }
 }
 .brand-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(90px, 1fr));
-  gap: 10px;
+  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+  gap: 14px;
 }
 .brand-card {
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 6px;
-  padding: 12px 6px;
-  border-radius: 12px;
+  gap: 10px;
+  padding: 20px 10px;
+  border-radius: 14px;
   border: 2px solid var(--border);
   background: var(--bg);
   cursor: pointer;
   transition: border-color 0.15s, background 0.15s, transform 0.1s;
-  min-height: 80px;
+  min-height: 120px;
 }
 .brand-card:hover {
   border-color: var(--accent);
@@ -547,8 +547,8 @@ textarea { resize: vertical; min-height: 100px; }
 }
 .brand-card-logo {
   display: block;
-  width: 36px;
-  height: 36px;
+  width: 56px;
+  height: 56px;
   color: var(--text-h);
 }
 .brand-card-logo svg {
@@ -556,7 +556,7 @@ textarea { resize: vertical; min-height: 100px; }
   height: 100%;
 }
 .brand-card-name {
-  font-size: 0.7rem;
+  font-size: 0.85rem;
   font-weight: 700;
   color: var(--text);
   text-align: center;
@@ -564,12 +564,19 @@ textarea { resize: vertical; min-height: 100px; }
 }
 @media (max-width: 600px) {
   .brand-grid {
-    grid-template-columns: repeat(auto-fill, minmax(75px, 1fr));
-    gap: 8px;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 10px;
   }
   .brand-card {
-    padding: 10px 4px;
-    min-height: 70px;
+    padding: 16px 8px;
+    min-height: 100px;
+  }
+  .brand-card-logo {
+    width: 44px;
+    height: 44px;
+  }
+  .brand-card-name {
+    font-size: 0.75rem;
   }
 }
 
