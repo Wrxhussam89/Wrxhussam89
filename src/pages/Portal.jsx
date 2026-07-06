@@ -1,11 +1,179 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { getSession, login, register, logout, getMyRequests, isDemoMode } from '../api/client'
+import { getSession, login, register, logout, getMyRequests, getQuotation, respondToQuotation, isDemoMode } from '../api/client'
+import { STATUS_PIPELINE } from '../carBrands'
 
-function statusClass(status) {
-  const s = (status || '').toLowerCase()
-  if (s.includes('cancel') || s.includes('reject')) return 'badge badge-danger'
-  return 'badge'
+function StatusTimeline({ currentStatus }) {
+  const pipeline = STATUS_PIPELINE.filter((s) => s !== 'Cancelled')
+  const currentIdx = pipeline.indexOf(currentStatus)
+  const isCancelled = currentStatus === 'Cancelled'
+
+  if (isCancelled) {
+    return (
+      <div className="status-timeline">
+        <div className="timeline-step cancelled">
+          <div className="timeline-dot" />
+          <span className="timeline-label">Cancelled</span>
+        </div>
+      </div>
+    )
+  }
+
+  return (
+    <div className="status-timeline">
+      {pipeline.map((step, i) => {
+        let state = 'upcoming'
+        if (i < currentIdx) state = 'done'
+        else if (i === currentIdx) state = 'current'
+        return (
+          <div key={step} className={`timeline-step ${state}`}>
+            <div className="timeline-dot">
+              {state === 'done' && (
+                <svg viewBox="0 0 16 16" width="10" height="10"><path d="M3 8l3 3 7-7" stroke="#fff" strokeWidth="2.5" fill="none" strokeLinecap="round" strokeLinejoin="round"/></svg>
+              )}
+            </div>
+            {i < pipeline.length - 1 && <div className="timeline-line" />}
+            <span className="timeline-label">{step}</span>
+          </div>
+        )
+      })}
+    </div>
+  )
+}
+
+function QuotationCard({ requestId }) {
+  const [quotation, setQuotation] = useState(null)
+  const [loading, setLoading] = useState(true)
+  const [responding, setResponding] = useState(false)
+
+  useEffect(() => {
+    getQuotation(requestId)
+      .then(setQuotation)
+      .catch(() => {})
+      .finally(() => setLoading(false))
+  }, [requestId])
+
+  if (loading || !quotation) return null
+
+  async function handleRespond(action) {
+    setResponding(true)
+    try {
+      await respondToQuotation(requestId, action)
+      setQuotation((q) => ({ ...q, status: action, respondedAt: new Date().toISOString() }))
+    } catch {
+    } finally {
+      setResponding(false)
+    }
+  }
+
+  const isDetailed = quotation.mode === 'detailed'
+  const isPending = quotation.status === 'pending'
+
+  return (
+    <div className="quotation-card">
+      <div className="quotation-header">
+        <h4>Quotation</h4>
+        <span className={`badge ${quotation.status === 'approved' ? '' : quotation.status === 'rejected' ? 'badge-danger' : 'badge-pending'}`}>
+          {quotation.status === 'pending' ? 'Awaiting Response' : quotation.status === 'approved' ? 'Approved' : 'Rejected'}
+        </span>
+      </div>
+
+      {isDetailed ? (
+        <>
+          <table className="quotation-table">
+            <thead>
+              <tr><th>Item</th><th>Qty</th><th>Price</th><th>Total</th></tr>
+            </thead>
+            <tbody>
+              {(quotation.items || []).map((item, i) => (
+                <tr key={i}>
+                  <td>{item.description}</td>
+                  <td>{item.qty}</td>
+                  <td>{item.price} JOD</td>
+                  <td>{(item.qty * item.price).toFixed(2)} JOD</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+          {quotation.laborCost > 0 && (
+            <div className="quotation-line">
+              <span>Labor</span><span>{quotation.laborCost} JOD</span>
+            </div>
+          )}
+          {quotation.taxPercent > 0 && (
+            <div className="quotation-line">
+              <span>Tax ({quotation.taxPercent}%)</span>
+              <span>{((quotation.subtotal || 0) * quotation.taxPercent / 100).toFixed(2)} JOD</span>
+            </div>
+          )}
+          <div className="quotation-line quotation-total">
+            <span>Total</span><span>{quotation.total} JOD</span>
+          </div>
+        </>
+      ) : (
+        <>
+          <div className="quotation-line quotation-total">
+            <span>Total</span><span>{quotation.total} JOD</span>
+          </div>
+          {quotation.description && <p className="muted" style={{ marginTop: 8 }}>{quotation.description}</p>}
+        </>
+      )}
+
+      {quotation.estimatedTime && (
+        <p className="muted" style={{ fontSize: '0.85rem', marginTop: 8 }}>
+          Estimated time: {quotation.estimatedTime}
+        </p>
+      )}
+
+      {isPending && (
+        <div className="quotation-actions">
+          <button className="btn btn-primary" disabled={responding} onClick={() => handleRespond('approved')}>
+            {responding ? '...' : 'Approve'}
+          </button>
+          <button className="btn btn-outline btn-danger-outline" disabled={responding} onClick={() => handleRespond('rejected')}>
+            {responding ? '...' : 'Reject'}
+          </button>
+        </div>
+      )}
+    </div>
+  )
+}
+
+function RequestDetail({ request, onBack }) {
+  return (
+    <div className="request-detail">
+      <button className="btn btn-outline" onClick={onBack} style={{ marginBottom: 20 }}>
+        Back to Requests
+      </button>
+      <div className="request-detail-header">
+        <div>
+          <h2 style={{ marginBottom: 4 }}>
+            {request.type === 'remote-programming' ? 'Remote Programming' : 'Service Booking'}
+          </h2>
+          <p className="muted" style={{ marginBottom: 0 }}>
+            {request.carMake} {request.carModel} {request.carYear && `(${request.carYear})`}
+          </p>
+          <p className="muted" style={{ fontSize: '0.85rem' }}>
+            VIN: {request.vin || 'N/A'} · Submitted {new Date(request.createdAt).toLocaleDateString()}
+          </p>
+        </div>
+      </div>
+
+      <div className="card" style={{ marginTop: 20, marginBottom: 20 }}>
+        <h3 style={{ marginBottom: 16 }}>Service Progress</h3>
+        <StatusTimeline currentStatus={request.status} />
+      </div>
+
+      <QuotationCard requestId={request.id} />
+
+      {request.notes && (
+        <div className="card" style={{ marginTop: 16 }}>
+          <h4 style={{ marginBottom: 8 }}>Notes</h4>
+          <p className="muted">{request.notes}</p>
+        </div>
+      )}
+    </div>
+  )
 }
 
 function LoginForm({ onLoggedIn }) {
@@ -140,6 +308,7 @@ function Dashboard({ session, onLogout }) {
   const [requests, setRequests] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
+  const [selected, setSelected] = useState(null)
 
   useEffect(() => {
     let cancelled = false
@@ -149,6 +318,14 @@ function Dashboard({ session, onLogout }) {
       .finally(() => { if (!cancelled) setLoading(false) })
     return () => { cancelled = true }
   }, [])
+
+  if (selected) {
+    return (
+      <div className="container" style={{ maxWidth: 800 }}>
+        <RequestDetail request={selected} onBack={() => setSelected(null)} />
+      </div>
+    )
+  }
 
   return (
     <div className="container" style={{ maxWidth: 800 }}>
@@ -183,17 +360,21 @@ function Dashboard({ session, onLogout }) {
 
       <div className="request-list">
         {requests.map((r) => (
-          <div className="request-item" key={r.id}>
-            <div>
+          <button
+            className="request-item request-item-btn"
+            key={r.id}
+            onClick={() => setSelected(r)}
+          >
+            <div style={{ textAlign: 'left' }}>
               <h3 style={{ marginBottom: 4 }}>
-                {r.type === 'remote-programming' ? 'Remote Programming' : 'Service Booking'} - {r.carMake} {r.carModel}
+                {r.type === 'remote-programming' ? 'Remote Programming' : 'Service Booking'} — {r.carMake} {r.carModel}
               </h3>
               <div className="request-item-meta muted">
                 VIN: {r.vin || 'N/A'} · Submitted {new Date(r.createdAt).toLocaleDateString()}
               </div>
             </div>
-            <span className={statusClass(r.status)}>{r.status}</span>
-          </div>
+            <span className={`badge ${r.status === 'Cancelled' ? 'badge-danger' : ''}`}>{r.status}</span>
+          </button>
         ))}
       </div>
     </div>

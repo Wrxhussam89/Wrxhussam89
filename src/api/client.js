@@ -15,6 +15,7 @@ const REQUESTS_KEY = 'demo_service_requests'
 const SESSION_KEY = 'demo_portal_session'
 const CUSTOMERS_KEY = 'demo_customers'
 const ADMIN_SESSION_KEY = 'demo_admin_session'
+const QUOTATIONS_KEY = 'demo_quotations'
 const ADMIN_DEMO_CODE = import.meta.env.VITE_ADMIN_DEMO_CODE || 'evmaster-admin'
 
 function demoDelay(value) {
@@ -31,6 +32,18 @@ function readDemoRequests() {
 
 function writeDemoRequests(list) {
   localStorage.setItem(REQUESTS_KEY, JSON.stringify(list))
+}
+
+function readDemoQuotations() {
+  try {
+    return JSON.parse(localStorage.getItem(QUOTATIONS_KEY)) || []
+  } catch {
+    return []
+  }
+}
+
+function writeDemoQuotations(list) {
+  localStorage.setItem(QUOTATIONS_KEY, JSON.stringify(list))
 }
 
 function authHeaders() {
@@ -132,6 +145,36 @@ export async function getMyRequests() {
   return request('/customer/requests')
 }
 
+export async function getQuotation(requestId) {
+  if (isDemoMode) {
+    const quotations = readDemoQuotations()
+    const q = quotations.find((q) => q.requestId === requestId)
+    return demoDelay(q || null)
+  }
+  return request(`/customer/requests/${requestId}/quotation`)
+}
+
+export async function respondToQuotation(requestId, action) {
+  if (isDemoMode) {
+    const quotations = readDemoQuotations()
+    const idx = quotations.findIndex((q) => q.requestId === requestId)
+    if (idx === -1) throw new Error('Quotation not found.')
+    quotations[idx] = { ...quotations[idx], status: action, respondedAt: new Date().toISOString() }
+    writeDemoQuotations(quotations)
+    const requests = readDemoRequests()
+    const ri = requests.findIndex((r) => r.id === requestId)
+    if (ri !== -1) {
+      requests[ri] = { ...requests[ri], status: action === 'approved' ? 'Approved' : 'Cancelled' }
+      writeDemoRequests(requests)
+    }
+    return demoDelay(quotations[idx])
+  }
+  return request(`/customer/requests/${requestId}/quotation`, {
+    method: 'PATCH',
+    body: JSON.stringify({ action }),
+  })
+}
+
 // --- Admin ---
 
 export function getAdminSession() {
@@ -180,4 +223,43 @@ export async function updateRequestStatus(id, status) {
     return demoDelay(list[idx])
   }
   return adminRequest(`/admin/requests/${id}`, { method: 'PATCH', body: JSON.stringify({ status }) })
+}
+
+export async function saveQuotation(requestId, quotation) {
+  if (isDemoMode) {
+    const quotations = readDemoQuotations()
+    const existing = quotations.findIndex((q) => q.requestId === requestId)
+    const record = {
+      id: existing >= 0 ? quotations[existing].id : crypto.randomUUID(),
+      requestId,
+      status: 'pending',
+      createdAt: new Date().toISOString(),
+      ...quotation,
+    }
+    if (existing >= 0) {
+      quotations[existing] = record
+    } else {
+      quotations.push(record)
+    }
+    writeDemoQuotations(quotations)
+    const requests = readDemoRequests()
+    const ri = requests.findIndex((r) => r.id === requestId)
+    if (ri !== -1) {
+      requests[ri] = { ...requests[ri], status: 'Quotation Sent' }
+      writeDemoRequests(requests)
+    }
+    return demoDelay(record)
+  }
+  return adminRequest(`/admin/requests/${requestId}/quotation`, {
+    method: 'POST',
+    body: JSON.stringify(quotation),
+  })
+}
+
+export async function getAdminQuotation(requestId) {
+  if (isDemoMode) {
+    const quotations = readDemoQuotations()
+    return demoDelay(quotations.find((q) => q.requestId === requestId) || null)
+  }
+  return adminRequest(`/admin/requests/${requestId}/quotation`)
 }

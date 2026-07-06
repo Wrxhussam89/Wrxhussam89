@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { submitServiceRequest, isDemoMode } from '../api/client'
+import { carBrands } from '../carBrands'
 
 const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
 const vinPattern = /^[A-HJ-NPR-Z0-9]{17}$/i
@@ -16,6 +17,30 @@ const initialState = {
   notes: '',
 }
 
+function BrandPicker({ selected, onSelect }) {
+  return (
+    <div className="brand-picker">
+      <label>Select Your Car Brand</label>
+      <div className="brand-grid">
+        {carBrands.map((brand) => (
+          <button
+            key={brand.name}
+            type="button"
+            className={`brand-card${selected === brand.name ? ' active' : ''}`}
+            onClick={() => onSelect(brand.name)}
+          >
+            <span
+              className="brand-card-logo"
+              dangerouslySetInnerHTML={{ __html: brand.svg }}
+            />
+            <span className="brand-card-name">{brand.name}</span>
+          </button>
+        ))}
+      </div>
+    </div>
+  )
+}
+
 function ServiceRequestForm({ type, requireVin = false, showPreferredDate = false }) {
   const [values, setValues] = useState(initialState)
   const [errors, setErrors] = useState({})
@@ -23,8 +48,15 @@ function ServiceRequestForm({ type, requireVin = false, showPreferredDate = fals
   const [result, setResult] = useState(null)
   const [submitError, setSubmitError] = useState('')
 
+  const selectedBrand = carBrands.find((b) => b.name === values.carMake)
+  const modelOptions = selectedBrand?.models || []
+
   function update(field, value) {
     setValues((v) => ({ ...v, [field]: value }))
+  }
+
+  function handleBrandSelect(brandName) {
+    setValues((v) => ({ ...v, carMake: brandName, carModel: '' }))
   }
 
   function validate() {
@@ -33,6 +65,7 @@ function ServiceRequestForm({ type, requireVin = false, showPreferredDate = fals
     if (!values.phone.trim()) next.phone = 'Phone number is required.'
     if (!values.email.trim()) next.email = 'Email address is required.'
     else if (!emailPattern.test(values.email.trim())) next.email = 'Enter a valid email address.'
+    if (!values.carMake) next.carMake = 'Please select a car brand.'
     if (!values.carModel.trim()) next.carModel = 'Car model is required.'
     if (requireVin) {
       if (!values.vin.trim()) next.vin = 'VIN is required.'
@@ -106,35 +139,54 @@ function ServiceRequestForm({ type, requireVin = false, showPreferredDate = fals
         </div>
       </div>
 
-      <div className="form-row-2">
-        <div className="form-row">
-          <label htmlFor="carMake">Car Make</label>
-          <input id="carMake" type="text" placeholder="e.g. Tesla" value={values.carMake} onChange={(e) => update('carMake', e.target.value)} />
-        </div>
+      <BrandPicker selected={values.carMake} onSelect={handleBrandSelect} />
+      {errors.carMake && <div className="form-error" style={{ marginTop: 4 }}>{errors.carMake}</div>}
+
+      <div className="form-row-2" style={{ marginTop: 18 }}>
         <div className="form-row">
           <label htmlFor="carModel">Car Model</label>
-          <input id="carModel" type="text" placeholder="e.g. Model 3" value={values.carModel} onChange={(e) => update('carModel', e.target.value)} />
+          {values.carMake === 'Other' || modelOptions.length === 0 ? (
+            <input
+              id="carModel"
+              type="text"
+              placeholder="Enter your car model"
+              value={values.carModel}
+              onChange={(e) => update('carModel', e.target.value)}
+            />
+          ) : (
+            <select id="carModel" value={values.carModel} onChange={(e) => update('carModel', e.target.value)}>
+              <option value="">Select model...</option>
+              {modelOptions.map((m) => <option key={m} value={m}>{m}</option>)}
+              <option value="__other">Other model</option>
+            </select>
+          )}
+          {values.carModel === '__other' && (
+            <input
+              type="text"
+              placeholder="Enter model name"
+              style={{ marginTop: 8 }}
+              onChange={(e) => update('carModel', e.target.value || '__other')}
+            />
+          )}
           {errors.carModel && <div className="form-error">{errors.carModel}</div>}
         </div>
-      </div>
-
-      <div className="form-row-2">
         <div className="form-row">
           <label htmlFor="carYear">Car Year</label>
           <input id="carYear" type="text" placeholder="e.g. 2022" value={values.carYear} onChange={(e) => update('carYear', e.target.value)} />
         </div>
-        <div className="form-row">
-          <label htmlFor="vin">VIN (Vehicle Identification Number){requireVin ? '' : ' - optional'}</label>
-          <input
-            id="vin"
-            type="text"
-            maxLength={17}
-            placeholder="17-character VIN"
-            value={values.vin}
-            onChange={(e) => update('vin', e.target.value.toUpperCase())}
-          />
-          {errors.vin && <div className="form-error">{errors.vin}</div>}
-        </div>
+      </div>
+
+      <div className="form-row">
+        <label htmlFor="vin">VIN (Vehicle Identification Number){requireVin ? '' : ' - optional'}</label>
+        <input
+          id="vin"
+          type="text"
+          maxLength={17}
+          placeholder="17-character VIN"
+          value={values.vin}
+          onChange={(e) => update('vin', e.target.value.toUpperCase())}
+        />
+        {errors.vin && <div className="form-error">{errors.vin}</div>}
       </div>
 
       {showPreferredDate && (
