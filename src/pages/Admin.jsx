@@ -4,22 +4,24 @@ import {
   getAllRequests, updateRequestStatus, saveQuotation, getAdminQuotation, isDemoMode,
 } from '../api/client'
 import { STATUS_PIPELINE } from '../carBrands'
+import { useT } from '../i18n'
 
 function AdminLogin({ onIn }) {
   const [code, setCode] = useState('')
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
+  const { t } = useT()
 
   async function handleSubmit(e) {
     e.preventDefault()
     setError('')
-    if (!code.trim()) { setError('Enter the access code.'); return }
+    if (!code.trim()) { setError(t('admin.errCode')); return }
     setLoading(true)
     try {
       await adminLogin(code.trim())
       onIn()
     } catch (err) {
-      setError(err.message || 'Access denied.')
+      setError(err.message || t('admin.errAccess'))
     } finally {
       setLoading(false)
     }
@@ -28,22 +30,22 @@ function AdminLogin({ onIn }) {
   return (
     <div className="container">
       <div className="section-head">
-        <h1>Staff Dashboard</h1>
-        <p className="muted">Enter the access code to view all service requests.</p>
+        <h1>{t('admin.heading')}</h1>
+        <p className="muted">{t('admin.sub')}</p>
       </div>
       <form className="form-card" onSubmit={handleSubmit} noValidate>
         {isDemoMode && (
           <div className="notice">
-            <strong>Demo mode:</strong> the default access code is <code>evmaster-admin</code>.
+            <strong>{t('common.demoMode')}</strong> {t('admin.demoCode', { code: 'evmaster-admin' })}
           </div>
         )}
         <div className="form-row">
-          <label htmlFor="admin-code">Access Code</label>
+          <label htmlFor="admin-code">{t('admin.accessCode')}</label>
           <input id="admin-code" type="password" value={code} onChange={(e) => setCode(e.target.value)} />
         </div>
         {error && <div className="form-error">{error}</div>}
         <button type="submit" className="btn btn-primary" disabled={loading} style={{ width: '100%' }}>
-          {loading ? 'Verifying...' : 'Enter'}
+          {loading ? t('admin.verifying') : t('admin.enter')}
         </button>
       </form>
     </div>
@@ -60,6 +62,7 @@ function QuotationBuilder({ requestId, onSent }) {
   const [taxPercent, setTaxPercent] = useState('16')
   const [saving, setSaving] = useState(false)
   const [existing, setExisting] = useState(null)
+  const { t } = useT()
 
   useEffect(() => {
     getAdminQuotation(requestId).then((q) => {
@@ -89,6 +92,8 @@ function QuotationBuilder({ requestId, onSent }) {
     return sub + sub * (Number(taxPercent) || 0) / 100
   }
 
+  const jod = t('quotation.jod')
+
   async function handleSend() {
     setSaving(true)
     try {
@@ -115,16 +120,16 @@ function QuotationBuilder({ requestId, onSent }) {
     return (
       <div className="quotation-card">
         <div className="quotation-header">
-          <h4>Quotation Sent</h4>
+          <h4>{t('admin.quotationSent')}</h4>
           <span className={`badge ${existing.status === 'approved' ? '' : existing.status === 'rejected' ? 'badge-danger' : 'badge-pending'}`}>
-            {existing.status === 'pending' ? 'Awaiting Response' : existing.status === 'approved' ? 'Approved' : 'Rejected'}
+            {existing.status === 'pending' ? t('quotation.awaitingResponse') : existing.status === 'approved' ? t('quotation.approved') : t('quotation.rejected')}
           </span>
         </div>
         <div className="quotation-line quotation-total">
-          <span>Total</span><span>{existing.total} JOD</span>
+          <span>{t('quotation.total')}</span><span>{existing.total} {jod}</span>
         </div>
         <button className="btn btn-outline" style={{ marginTop: 12 }} onClick={() => setExisting(null)}>
-          Send New Quotation
+          {t('admin.sendNewQuotation')}
         </button>
       </div>
     )
@@ -132,21 +137,21 @@ function QuotationBuilder({ requestId, onSent }) {
 
   return (
     <div className="quotation-builder">
-      <h4 style={{ marginBottom: 12 }}>Send Quotation</h4>
+      <h4 style={{ marginBottom: 12 }}>{t('admin.sendQuotation')}</h4>
       <div className="tabs" style={{ maxWidth: '100%', marginBottom: 16 }}>
-        <button className={`tab ${mode === 'simple' ? 'active' : ''}`} onClick={() => setMode('simple')}>Simple</button>
-        <button className={`tab ${mode === 'detailed' ? 'active' : ''}`} onClick={() => setMode('detailed')}>Detailed</button>
+        <button className={`tab ${mode === 'simple' ? 'active' : ''}`} onClick={() => setMode('simple')}>{t('admin.simple')}</button>
+        <button className={`tab ${mode === 'detailed' ? 'active' : ''}`} onClick={() => setMode('detailed')}>{t('admin.detailed')}</button>
       </div>
 
       {mode === 'simple' ? (
         <>
           <div className="form-row">
-            <label>Total (JOD)</label>
+            <label>{t('admin.totalJod')}</label>
             <input type="number" value={total} onChange={(e) => setTotal(e.target.value)} placeholder="0.00" />
           </div>
           <div className="form-row">
-            <label>Description</label>
-            <textarea value={description} onChange={(e) => setDescription(e.target.value)} placeholder="Describe the work..." style={{ minHeight: 60 }} />
+            <label>{t('admin.description')}</label>
+            <textarea value={description} onChange={(e) => setDescription(e.target.value)} placeholder={t('admin.descPlaceholder')} style={{ minHeight: 60 }} />
           </div>
         </>
       ) : (
@@ -156,21 +161,21 @@ function QuotationBuilder({ requestId, onSent }) {
               <div key={i} className="quotation-item-row">
                 <input
                   type="text"
-                  placeholder="Item description"
+                  placeholder={t('admin.itemDesc')}
                   value={item.description}
                   onChange={(e) => updateItem(i, 'description', e.target.value)}
                   style={{ flex: 2 }}
                 />
                 <input
                   type="number"
-                  placeholder="Qty"
+                  placeholder={t('quotation.qty')}
                   value={item.qty}
                   onChange={(e) => updateItem(i, 'qty', e.target.value)}
                   style={{ width: 70 }}
                 />
                 <input
                   type="number"
-                  placeholder="Price"
+                  placeholder={t('quotation.price')}
                   value={item.price}
                   onChange={(e) => updateItem(i, 'price', e.target.value)}
                   style={{ width: 90 }}
@@ -184,31 +189,31 @@ function QuotationBuilder({ requestId, onSent }) {
             ))}
           </div>
           <button type="button" className="btn btn-outline" onClick={addItem} style={{ marginBottom: 12 }}>
-            + Add Item
+            {t('admin.addItem')}
           </button>
           <div className="form-row-2">
             <div className="form-row">
-              <label>Labor Cost (JOD)</label>
+              <label>{t('admin.laborCost')}</label>
               <input type="number" value={laborCost} onChange={(e) => setLaborCost(e.target.value)} placeholder="0" />
             </div>
             <div className="form-row">
-              <label>Tax %</label>
+              <label>{t('admin.taxPercent')}</label>
               <input type="number" value={taxPercent} onChange={(e) => setTaxPercent(e.target.value)} placeholder="16" />
             </div>
           </div>
           <div className="quotation-line quotation-total" style={{ marginBottom: 12 }}>
-            <span>Calculated Total</span><span>{calcTotal().toFixed(2)} JOD</span>
+            <span>{t('admin.calculatedTotal')}</span><span>{calcTotal().toFixed(2)} {jod}</span>
           </div>
         </>
       )}
 
       <div className="form-row">
-        <label>Estimated Time</label>
-        <input type="text" value={estimatedTime} onChange={(e) => setEstimatedTime(e.target.value)} placeholder="e.g. 2-3 business days" />
+        <label>{t('admin.estimatedTime')}</label>
+        <input type="text" value={estimatedTime} onChange={(e) => setEstimatedTime(e.target.value)} placeholder={t('admin.estTimePlaceholder')} />
       </div>
 
       <button className="btn btn-primary" onClick={handleSend} disabled={saving} style={{ width: '100%' }}>
-        {saving ? 'Sending...' : 'Send Quotation to Customer'}
+        {saving ? t('admin.sending') : t('admin.sendToCustomer')}
       </button>
     </div>
   )
@@ -216,17 +221,18 @@ function QuotationBuilder({ requestId, onSent }) {
 
 function RequestDetailAdmin({ request, onBack, onStatusChange }) {
   const [showQuotation, setShowQuotation] = useState(false)
+  const { t, lang } = useT()
 
   return (
     <div className="request-detail">
       <button className="btn btn-outline" onClick={onBack} style={{ marginBottom: 20 }}>
-        Back to All Requests
+        {t('admin.backToAll')}
       </button>
 
       <div className="request-detail-header">
         <div style={{ flex: 1 }}>
           <h2 style={{ marginBottom: 4 }}>
-            {request.type === 'remote-programming' ? 'Remote Programming' : 'Service Booking'}
+            {request.type === 'remote-programming' ? t('portal.remoteProgramming') : t('portal.serviceBooking')}
           </h2>
           <p className="muted" style={{ marginBottom: 0 }}>
             {request.carMake} {request.carModel} {request.carYear && `(${request.carYear})`}
@@ -235,25 +241,25 @@ function RequestDetailAdmin({ request, onBack, onStatusChange }) {
       </div>
 
       <div className="card" style={{ marginTop: 20 }}>
-        <h3 style={{ marginBottom: 12 }}>Customer Info</h3>
+        <h3 style={{ marginBottom: 12 }}>{t('admin.customerInfo')}</h3>
         <div className="detail-grid">
-          <div><strong>Name:</strong> {request.name}</div>
-          <div><strong>Phone:</strong> {request.phone}</div>
-          <div><strong>Email:</strong> {request.email}</div>
-          <div><strong>VIN:</strong> {request.vin || 'N/A'}</div>
-          <div><strong>Year:</strong> {request.carYear || 'N/A'}</div>
-          <div><strong>Submitted:</strong> {new Date(request.createdAt).toLocaleDateString()}</div>
+          <div><strong>{t('admin.name')}</strong> {request.name}</div>
+          <div><strong>{t('admin.phone')}</strong> {request.phone}</div>
+          <div><strong>{t('admin.email')}</strong> {request.email}</div>
+          <div><strong>{t('admin.vin')}</strong> {request.vin || t('common.na')}</div>
+          <div><strong>{t('admin.year')}</strong> {request.carYear || t('common.na')}</div>
+          <div><strong>{t('admin.submitted')}</strong> {new Date(request.createdAt).toLocaleDateString(lang === 'ar' ? 'ar-JO' : 'en-US')}</div>
         </div>
         {request.notes && (
           <div style={{ marginTop: 12 }}>
-            <strong>Notes:</strong>
+            <strong>{t('admin.notesLabel')}</strong>
             <p className="muted" style={{ marginTop: 4 }}>{request.notes}</p>
           </div>
         )}
       </div>
 
       <div className="card" style={{ marginTop: 16 }}>
-        <h3 style={{ marginBottom: 12 }}>Update Status</h3>
+        <h3 style={{ marginBottom: 12 }}>{t('admin.updateStatus')}</h3>
         <div className="status-pipeline-admin">
           {STATUS_PIPELINE.map((s) => (
             <button
@@ -261,7 +267,7 @@ function RequestDetailAdmin({ request, onBack, onStatusChange }) {
               className={`pipeline-btn ${request.status === s ? 'active' : ''} ${s === 'Cancelled' ? 'cancelled' : ''}`}
               onClick={() => onStatusChange(request.id, s)}
             >
-              {s}
+              {t(`status.${s}`)}
             </button>
           ))}
         </div>
@@ -270,7 +276,7 @@ function RequestDetailAdmin({ request, onBack, onStatusChange }) {
       <div style={{ marginTop: 16 }}>
         {!showQuotation ? (
           <button className="btn btn-primary" onClick={() => setShowQuotation(true)}>
-            Manage Quotation
+            {t('admin.manageQuotation')}
           </button>
         ) : (
           <QuotationBuilder
@@ -292,12 +298,13 @@ function AdminDashboard({ onOut }) {
   const [error, setError] = useState('')
   const [selected, setSelected] = useState(null)
   const [filter, setFilter] = useState('all')
+  const { t, lang, dir } = useT()
 
   useEffect(() => {
     let cancelled = false
     getAllRequests()
       .then((data) => { if (!cancelled) setRequests(data) })
-      .catch((err) => { if (!cancelled) setError(err.message || 'Could not load requests.') })
+      .catch((err) => { if (!cancelled) setError(err.message || t('admin.errLoadRequests')) })
       .finally(() => { if (!cancelled) setLoading(false) })
     return () => { cancelled = true }
   }, [])
@@ -333,41 +340,41 @@ function AdminDashboard({ onOut }) {
     <div className="container" style={{ maxWidth: 960 }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24, flexWrap: 'wrap', gap: 12 }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-          <h2 style={{ marginBottom: 0 }}>All Requests</h2>
-          {newCount > 0 && <span className="badge">{newCount} new</span>}
+          <h2 style={{ marginBottom: 0 }}>{t('admin.allRequests')}</h2>
+          {newCount > 0 && <span className="badge">{t('admin.new', { count: newCount })}</span>}
         </div>
-        <button className="btn btn-outline" onClick={onOut}>Sign Out</button>
+        <button className="btn btn-outline" onClick={onOut}>{t('common.signOut')}</button>
       </div>
 
       {isDemoMode && (
         <div className="notice">
-          <strong>Demo mode:</strong> showing requests from this browser's local storage.
-          Real-time push notifications to your phone require the backend — this badge count is
-          the client-side equivalent.
+          <strong>{t('common.demoMode')}</strong> {t('admin.demoNotice')}
         </div>
       )}
 
       <div className="admin-filter-bar">
         <button className={`filter-chip ${filter === 'all' ? 'active' : ''}`} onClick={() => setFilter('all')}>
-          All ({requests.length})
+          {t('admin.all')} ({requests.length})
         </button>
         {STATUS_PIPELINE.map((s) => {
           const count = requests.filter((r) => r.status === s).length
           if (count === 0) return null
           return (
             <button key={s} className={`filter-chip ${filter === s ? 'active' : ''}`} onClick={() => setFilter(s)}>
-              {s} ({count})
+              {t(`status.${s}`)} ({count})
             </button>
           )
         })}
       </div>
 
-      {loading && <p className="muted">Loading requests...</p>}
+      {loading && <p className="muted">{t('admin.loadingRequests')}</p>}
       {error && <div className="form-error">{error}</div>}
 
       {!loading && !error && filtered.length === 0 && (
         <div className="card text-center">
-          <p className="muted">No requests{filter !== 'all' ? ` with status "${filter}"` : ''} yet.</p>
+          <p className="muted">
+            {filter !== 'all' ? t('admin.noRequestsFiltered', { status: t(`status.${filter}`) }) : t('admin.noRequests')}
+          </p>
         </div>
       )}
 
@@ -378,19 +385,19 @@ function AdminDashboard({ onOut }) {
             key={r.id}
             onClick={() => setSelected(r)}
           >
-            <div style={{ textAlign: 'left', flex: 1 }}>
+            <div style={{ flex: 1 }}>
               <h3 style={{ marginBottom: 4 }}>
-                {r.type === 'remote-programming' ? 'Remote Programming' : 'Service Booking'} — {r.carMake} {r.carModel}
+                {r.type === 'remote-programming' ? t('portal.remoteProgramming') : t('portal.serviceBooking')} — {r.carMake} {r.carModel}
               </h3>
               <div className="request-item-meta muted">
-                {r.name} · {r.phone} · Submitted {new Date(r.createdAt).toLocaleDateString()}
+                {r.name} · {r.phone} · {t('common.submitted')} {new Date(r.createdAt).toLocaleDateString(lang === 'ar' ? 'ar-JO' : 'en-US')}
               </div>
             </div>
             <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
               <span className={`badge ${r.status === 'Cancelled' ? 'badge-danger' : r.status === 'Received' ? 'badge-new' : ''}`}>
-                {r.status}
+                {t(`status.${r.status}`)}
               </span>
-              <span className="muted" style={{ fontSize: '1.2rem' }}>›</span>
+              <span className="muted request-arrow">{'›'}</span>
             </div>
           </button>
         ))}

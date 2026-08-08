@@ -1,7 +1,10 @@
 import { shop } from '../siteConfig'
+import { useT } from '../i18n'
 import logo from '../assets/logo.png'
 
 function Footer() {
+  const { t } = useT()
+
   return (
     <footer className="footer">
       <div className="footer-inner">
@@ -9,16 +12,16 @@ function Footer() {
           <div className="footer-brand">
             <img src={logo} alt={shop.name} className="brand-logo" />
           </div>
-          <p className="muted">{shop.tagline}</p>
+          <p className="muted">{t('site.tagline')}</p>
         </div>
 
         <div>
-          <h3>Contact</h3>
+          <h3>{t('footer.contact')}</h3>
           <p>
             <a href={shop.phoneHref}>{shop.phone}</a>
           </p>
           <p>
-            <a href={shop.whatsapp} target="_blank" rel="noreferrer">WhatsApp</a>
+            <a href={shop.whatsapp} target="_blank" rel="noreferrer">{t('common.whatsapp')}</a>
           </p>
           <p>
             <a href={`mailto:${shop.email}`}>{shop.email}</a>
@@ -26,18 +29,19 @@ function Footer() {
         </div>
 
         <div>
-          <h3>Location & Hours</h3>
-          <p className="muted">{shop.address}</p>
+          <h3>{t('footer.locationHours')}</h3>
+          <p className="muted">{t('site.address')}</p>
           {shop.hours.map((h) => (
             <p key={h.day}>
-              <span className="muted">{h.day}:</span> {h.time}
+              <span className="muted">{t(`site.day.${h.day}`)}:</span>{' '}
+              {h.time === 'Closed' ? t('site.time.closed') : h.time}
             </p>
           ))}
         </div>
       </div>
       <div className="footer-bottom">
         <p>
-          © {new Date().getFullYear()} {shop.name}. All rights reserved.
+          © {new Date().getFullYear()} {shop.name}. {t('footer.rights')}
         </p>
       </div>
     </footer>

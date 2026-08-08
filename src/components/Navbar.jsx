@@ -1,19 +1,25 @@
 import { useState } from 'react'
 import { NavLink, Link } from 'react-router-dom'
 import { shop } from '../siteConfig'
+import { useT } from '../i18n'
 import logo from '../assets/logo.png'
-
-const links = [
-  { to: '/', label: 'Home', primary: true },
-  { to: '/services', label: 'Services', primary: true },
-  { to: '/remote-programming', label: 'Remote Programming', primary: true },
-  { to: '/about', label: 'About' },
-  { to: '/booking', label: 'Book a Service', primary: true },
-  { to: '/portal', label: 'Customer Portal', primary: true },
-]
 
 function Navbar() {
   const [open, setOpen] = useState(false)
+  const { t, lang, setLang } = useT()
+
+  const links = [
+    { to: '/', label: t('nav.home'), primary: true },
+    { to: '/services', label: t('nav.services'), primary: true },
+    { to: '/remote-programming', label: t('nav.remoteProgramming'), primary: true },
+    { to: '/about', label: t('nav.about') },
+    { to: '/booking', label: t('nav.bookService'), primary: true },
+    { to: '/portal', label: t('nav.customerPortal'), primary: true },
+  ]
+
+  function toggleLang() {
+    setLang(lang === 'en' ? 'ar' : 'en')
+  }
 
   return (
     <header className="navbar">
@@ -24,7 +30,7 @@ function Navbar() {
 
         <button
           className="nav-toggle"
-          aria-label="Toggle navigation"
+          aria-label={t('nav.toggleNav')}
           aria-expanded={open}
           onClick={() => setOpen((o) => !o)}
         >
@@ -48,15 +54,17 @@ function Navbar() {
             </NavLink>
           ))}
           <div className="nav-links-mobile-actions">
-            <a href={shop.phoneHref} className="btn btn-outline">Call Now</a>
-            <a href={shop.whatsapp} target="_blank" rel="noreferrer" className="btn btn-primary">WhatsApp</a>
+            <button className="btn btn-outline lang-toggle" onClick={toggleLang}>{t('nav.langToggle')}</button>
+            <a href={shop.phoneHref} className="btn btn-outline">{t('nav.callNow')}</a>
+            <a href={shop.whatsapp} target="_blank" rel="noreferrer" className="btn btn-primary">{t('nav.whatsapp')}</a>
           </div>
         </nav>
 
         <div className="header-actions">
-          <Link to="/portal" className="btn btn-outline">Account</Link>
-          <a href={shop.phoneHref} className="btn btn-outline">Call Now</a>
-          <a href={shop.whatsapp} target="_blank" rel="noreferrer" className="btn btn-primary">WhatsApp</a>
+          <button className="btn btn-outline lang-toggle" onClick={toggleLang}>{t('nav.langToggle')}</button>
+          <Link to="/portal" className="btn btn-outline">{t('nav.account')}</Link>
+          <a href={shop.phoneHref} className="btn btn-outline">{t('nav.callNow')}</a>
+          <a href={shop.whatsapp} target="_blank" rel="noreferrer" className="btn btn-primary">{t('nav.whatsapp')}</a>
         </div>
       </div>
     </header>

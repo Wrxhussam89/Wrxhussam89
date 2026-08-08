@@ -1,37 +1,26 @@
 import { shop } from '../siteConfig'
+import { useT } from '../i18n'
 import logo from '../assets/logo.png'
 
-const values = [
-  {
-    title: 'Safety first, always',
-    desc: 'High-voltage systems demand respect - every technician is trained in EV-specific safety procedures before touching a battery pack.',
-  },
-  {
-    title: 'Diagnose before we touch anything',
-    desc: 'We use OEM-grade diagnostic tools to confirm the actual fault, rather than swapping parts and hoping.',
-  },
-  {
-    title: 'Straight answers',
-    desc: "You'll know what's wrong, what it costs, and why - before any work begins.",
-  },
-  {
-    title: 'Your time matters',
-    desc: 'Pickup and delivery across Amman means keeping your car in our shop, not you in our waiting room.',
-  },
-]
-
 function About() {
+  const { t } = useT()
+
+  const values = [
+    { title: t('about.value1Title'), desc: t('about.value1Desc') },
+    { title: t('about.value2Title'), desc: t('about.value2Desc') },
+    { title: t('about.value3Title'), desc: t('about.value3Desc') },
+    { title: t('about.value4Title'), desc: t('about.value4Desc') },
+  ]
+
   return (
     <div className="page">
       <section className="block">
         <div className="container">
           <div className="section-head">
-            <span className="eyebrow">Our story</span>
-            <h1>Built for Jordan's electric shift</h1>
+            <span className="eyebrow">{t('about.storyEyebrow')}</span>
+            <h1>{t('about.storyHeading')}</h1>
             <p className="muted">
-              As EVs became a real part of daily driving in Jordan, we saw the gap: garages built
-              around combustion engines, adapting as they went. {shop.name} exists to close that
-              gap - a workshop built around electric vehicles from day one.
+              {t('about.storyBody', { shopName: shop.name })}
             </p>
           </div>
 
@@ -40,25 +29,20 @@ function About() {
               <img src={logo} alt={shop.name} style={{ maxWidth: '60%', height: 'auto' }} />
             </div>
             <div>
-              <span className="eyebrow">Our mission</span>
-              <h2>Keep Jordan's EVs running with confidence</h2>
+              <span className="eyebrow">{t('about.missionEyebrow')}</span>
+              <h2>{t('about.missionHeading')}</h2>
               <p className="muted">
-                We started {shop.name} to give EV owners in Jordan a place that understands their
-                car properly - high-voltage safety, battery chemistry, and the software that runs
-                underneath it all. No guesswork, no combustion-era habits applied where they
-                don't belong.
+                {t('about.missionBody1', { shopName: shop.name })}
               </p>
               <p className="muted">
-                Every job that comes through our Bayader Industrial Area workshop is handled by
-                technicians trained specifically for electric drivetrains, with diagnostic tools
-                built for the job.
+                {t('about.missionBody2')}
               </p>
             </div>
           </div>
 
           <div className="section-head">
-            <span className="eyebrow">What we stand for</span>
-            <h2>The principles behind every job</h2>
+            <span className="eyebrow">{t('about.valuesEyebrow')}</span>
+            <h2>{t('about.valuesHeading')}</h2>
           </div>
           <div className="grid grid-2">
             {values.map((v) => (

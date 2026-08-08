@@ -1,40 +1,42 @@
 import { Link } from 'react-router-dom'
 import { shop, services } from '../siteConfig'
+import { useT } from '../i18n'
 
 function Home() {
+  const { t } = useT()
+
   return (
     <div className="page">
       <section className="hero-section">
         <div className="container hero-grid">
           <div>
-            <span className="eyebrow">Jordan's EV Specialists</span>
-            <h1>{shop.tagline}</h1>
+            <span className="eyebrow">{t('home.eyebrow')}</span>
+            <h1>{t('site.tagline')}</h1>
             <p className="muted">
-              From battery diagnostics to charging system repair, {shop.name} keeps your
-              electric vehicle running at its best - in the shop or fully remote.
+              {t('home.heroDesc', { shopName: shop.name })}
             </p>
             <div className="hero-actions">
-              <Link to="/booking" className="btn btn-primary">Book a Service</Link>
-              <Link to="/remote-programming" className="btn btn-outline">Remote Online Programming</Link>
+              <Link to="/booking" className="btn btn-primary">{t('home.bookService')}</Link>
+              <Link to="/remote-programming" className="btn btn-outline">{t('home.remoteOnline')}</Link>
             </div>
           </div>
           <div className="hero-panel">
-            <h3>Visit or Contact Us</h3>
+            <h3>{t('home.visitContact')}</h3>
             <ul>
               <li>
-                <strong>📍</strong>
-                <span>{shop.address}</span>
+                <strong>{'\u{1F4CD}'}</strong>
+                <span>{t('site.address')}</span>
               </li>
               <li>
-                <strong>📞</strong>
+                <strong>{'\u{1F4DE}'}</strong>
                 <a href={shop.phoneHref}>{shop.phone}</a>
               </li>
               <li>
-                <strong>💬</strong>
-                <a href={shop.whatsapp} target="_blank" rel="noreferrer">WhatsApp</a>
+                <strong>{'\u{1F4AC}'}</strong>
+                <a href={shop.whatsapp} target="_blank" rel="noreferrer">{t('common.whatsapp')}</a>
               </li>
               <li>
-                <strong>✉️</strong>
+                <strong>{'✉️'}</strong>
                 <a href={`mailto:${shop.email}`}>{shop.email}</a>
               </li>
             </ul>
@@ -45,15 +47,15 @@ function Home() {
       <section className="block">
         <div className="container">
           <div className="section-head">
-            <h2>What We Do</h2>
-            <p className="muted">Certified, EV-only technicians using manufacturer-grade diagnostic tools.</p>
+            <h2>{t('home.whatWeDo')}</h2>
+            <p className="muted">{t('home.whatWeDoSub')}</p>
           </div>
           <div className="grid grid-3">
-            {services.slice(0, 6).map((s) => (
+            {services.slice(0, 6).map((s, i) => (
               <div className="card" key={s.title}>
                 <div className="card-icon">{s.icon}</div>
-                <h3>{s.title}</h3>
-                <p className="muted">{s.desc}</p>
+                <h3>{t(`site.service.${i}.title`)}</h3>
+                <p className="muted">{t(`site.service.${i}.desc`)}</p>
               </div>
             ))}
           </div>
@@ -64,12 +66,12 @@ function Home() {
         <div className="container">
           <div className="card" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 20 }}>
             <div>
-              <h2 style={{ marginBottom: 4 }}>Ready to get your EV serviced?</h2>
-              <p className="muted" style={{ marginBottom: 0 }}>Book an in-shop appointment or submit a remote programming request online.</p>
+              <h2 style={{ marginBottom: 4 }}>{t('home.ctaHeading')}</h2>
+              <p className="muted" style={{ marginBottom: 0 }}>{t('home.ctaDesc')}</p>
             </div>
             <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
-              <Link to="/booking" className="btn btn-primary">Book a Service</Link>
-              <Link to="/portal" className="btn btn-outline">Customer Portal</Link>
+              <Link to="/booking" className="btn btn-primary">{t('home.bookService')}</Link>
+              <Link to="/portal" className="btn btn-outline">{t('home.customerPortal')}</Link>
             </div>
           </div>
         </div>

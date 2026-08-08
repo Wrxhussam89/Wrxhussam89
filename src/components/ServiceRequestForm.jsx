@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { submitServiceRequest, isDemoMode } from '../api/client'
 import { carBrands } from '../carBrands'
+import { useT } from '../i18n'
 
 const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
 const vinPattern = /^[A-HJ-NPR-Z0-9]{17}$/i
@@ -23,6 +24,7 @@ function ServiceRequestForm({ type, requireVin = false, showPreferredDate = fals
   const [submitting, setSubmitting] = useState(false)
   const [result, setResult] = useState(null)
   const [submitError, setSubmitError] = useState('')
+  const { t } = useT()
 
   const selectedBrand = carBrands.find((b) => b.name === values.carMake)
   const modelOptions = selectedBrand?.models || []
@@ -37,17 +39,17 @@ function ServiceRequestForm({ type, requireVin = false, showPreferredDate = fals
 
   function validate() {
     const next = {}
-    if (!values.name.trim()) next.name = 'Full name is required.'
-    if (!values.phone.trim()) next.phone = 'Phone number is required.'
-    if (!values.email.trim()) next.email = 'Email address is required.'
-    else if (!emailPattern.test(values.email.trim())) next.email = 'Enter a valid email address.'
-    if (!values.carMake) next.carMake = 'Please select a car brand.'
-    if (!values.carModel.trim()) next.carModel = 'Car model is required.'
+    if (!values.name.trim()) next.name = t('form.errName')
+    if (!values.phone.trim()) next.phone = t('form.errPhone')
+    if (!values.email.trim()) next.email = t('form.errEmail')
+    else if (!emailPattern.test(values.email.trim())) next.email = t('form.errEmailInvalid')
+    if (!values.carMake) next.carMake = t('form.errBrand')
+    if (!values.carModel.trim()) next.carModel = t('form.errModel')
     if (requireVin) {
-      if (!values.vin.trim()) next.vin = 'VIN is required.'
-      else if (!vinPattern.test(values.vin.trim())) next.vin = 'Enter a valid 17-character VIN.'
+      if (!values.vin.trim()) next.vin = t('form.errVin')
+      else if (!vinPattern.test(values.vin.trim())) next.vin = t('form.errVinInvalid')
     } else if (values.vin.trim() && !vinPattern.test(values.vin.trim())) {
-      next.vin = 'Enter a valid 17-character VIN.'
+      next.vin = t('form.errVinInvalid')
     }
     setErrors(next)
     return Object.keys(next).length === 0
@@ -62,7 +64,7 @@ function ServiceRequestForm({ type, requireVin = false, showPreferredDate = fals
       const record = await submitServiceRequest({ type, ...values })
       setResult(record)
     } catch (err) {
-      setSubmitError(err.message || 'Something went wrong submitting your request.')
+      setSubmitError(err.message || t('form.errSubmit'))
     } finally {
       setSubmitting(false)
     }
@@ -71,16 +73,17 @@ function ServiceRequestForm({ type, requireVin = false, showPreferredDate = fals
   if (result) {
     return (
       <div className="form-card form-success">
-        <h2>Request Received</h2>
+        <h2>{t('form.successHeading')}</h2>
         <p className="muted">
-          Thanks, {values.name.split(' ')[0] || 'there'}! Your request has been submitted.
-          We'll reach out at <strong>{values.email}</strong> or <strong>{values.phone}</strong>{' '}
-          to confirm next steps.
+          {t('form.successBody', {
+            name: values.name.split(' ')[0] || '',
+            email: values.email,
+            phone: values.phone,
+          })}
         </p>
         {isDemoMode && (
           <p className="muted" style={{ fontSize: '0.8rem' }}>
-            (Demo mode: this request was saved locally in your browser. Connect the site to your
-            backend/ERP API to store real submissions.)
+            {t('form.demoSuccessNote')}
           </p>
         )}
       </div>
@@ -91,25 +94,24 @@ function ServiceRequestForm({ type, requireVin = false, showPreferredDate = fals
     <form className="form-card" onSubmit={handleSubmit} noValidate>
       {isDemoMode && (
         <div className="notice">
-          <strong>Demo mode:</strong> no backend is connected yet, so submissions are stored only
-          in your browser. Set <code>VITE_API_BASE_URL</code> to wire this up to your ERP.
+          <strong>{t('common.demoMode')}</strong> {t('form.demoNotice', { code: 'VITE_API_BASE_URL' })}
         </div>
       )}
 
       <div className="form-row">
-        <label htmlFor="name">Full Name</label>
+        <label htmlFor="name">{t('form.fullName')}</label>
         <input id="name" type="text" value={values.name} onChange={(e) => update('name', e.target.value)} />
         {errors.name && <div className="form-error">{errors.name}</div>}
       </div>
 
       <div className="form-row-2">
         <div className="form-row">
-          <label htmlFor="phone">Phone Number</label>
+          <label htmlFor="phone">{t('form.phone')}</label>
           <input id="phone" type="tel" value={values.phone} onChange={(e) => update('phone', e.target.value)} />
           {errors.phone && <div className="form-error">{errors.phone}</div>}
         </div>
         <div className="form-row">
-          <label htmlFor="email">Email Address</label>
+          <label htmlFor="email">{t('form.email')}</label>
           <input id="email" type="email" value={values.email} onChange={(e) => update('email', e.target.value)} />
           {errors.email && <div className="form-error">{errors.email}</div>}
         </div>
@@ -117,34 +119,34 @@ function ServiceRequestForm({ type, requireVin = false, showPreferredDate = fals
 
       <div className="form-row-2">
         <div className="form-row">
-          <label htmlFor="carMake">Car Brand</label>
+          <label htmlFor="carMake">{t('form.carBrand')}</label>
           <select id="carMake" value={values.carMake} onChange={handleBrandChange}>
-            <option value="">Select brand...</option>
+            <option value="">{t('form.selectBrand')}</option>
             {carBrands.map((b) => <option key={b.name} value={b.name}>{b.name}</option>)}
           </select>
           {errors.carMake && <div className="form-error">{errors.carMake}</div>}
         </div>
         <div className="form-row">
-          <label htmlFor="carModel">Car Model</label>
+          <label htmlFor="carModel">{t('form.carModel')}</label>
           {values.carMake === 'Other' || modelOptions.length === 0 ? (
             <input
               id="carModel"
               type="text"
-              placeholder="Enter your car model"
+              placeholder={t('form.enterModel')}
               value={values.carModel}
               onChange={(e) => update('carModel', e.target.value)}
             />
           ) : (
             <select id="carModel" value={values.carModel} onChange={(e) => update('carModel', e.target.value)}>
-              <option value="">Select model...</option>
+              <option value="">{t('form.selectModel')}</option>
               {modelOptions.map((m) => <option key={m} value={m}>{m}</option>)}
-              <option value="__other">Other model</option>
+              <option value="__other">{t('form.otherModel')}</option>
             </select>
           )}
           {values.carModel === '__other' && (
             <input
               type="text"
-              placeholder="Enter model name"
+              placeholder={t('form.enterModelName')}
               style={{ marginTop: 8 }}
               onChange={(e) => update('carModel', e.target.value || '__other')}
             />
@@ -155,16 +157,16 @@ function ServiceRequestForm({ type, requireVin = false, showPreferredDate = fals
 
       <div className="form-row-2">
         <div className="form-row">
-          <label htmlFor="carYear">Car Year</label>
-          <input id="carYear" type="text" placeholder="e.g. 2022" value={values.carYear} onChange={(e) => update('carYear', e.target.value)} />
+          <label htmlFor="carYear">{t('form.carYear')}</label>
+          <input id="carYear" type="text" placeholder={t('form.yearPlaceholder')} value={values.carYear} onChange={(e) => update('carYear', e.target.value)} />
         </div>
         <div className="form-row">
-          <label htmlFor="vin">VIN{requireVin ? '' : ' - optional'}</label>
+          <label htmlFor="vin">{requireVin ? t('form.vin') : t('form.vinOptional')}</label>
           <input
             id="vin"
             type="text"
             maxLength={17}
-            placeholder="17-character VIN"
+            placeholder={t('form.vinPlaceholder')}
             value={values.vin}
             onChange={(e) => update('vin', e.target.value.toUpperCase())}
           />
@@ -174,20 +176,20 @@ function ServiceRequestForm({ type, requireVin = false, showPreferredDate = fals
 
       {showPreferredDate && (
         <div className="form-row">
-          <label htmlFor="preferredDate">Preferred Date</label>
+          <label htmlFor="preferredDate">{t('form.preferredDate')}</label>
           <input id="preferredDate" type="date" value={values.preferredDate} onChange={(e) => update('preferredDate', e.target.value)} />
         </div>
       )}
 
       <div className="form-row">
-        <label htmlFor="notes">Describe the Issue / What You Need</label>
+        <label htmlFor="notes">{t('form.notes')}</label>
         <textarea id="notes" value={values.notes} onChange={(e) => update('notes', e.target.value)} />
       </div>
 
       {submitError && <div className="form-error">{submitError}</div>}
 
       <button type="submit" className="btn btn-primary" disabled={submitting} style={{ width: '100%' }}>
-        {submitting ? 'Submitting...' : 'Submit Request'}
+        {submitting ? t('form.submitting') : t('form.submitRequest')}
       </button>
     </form>
   )

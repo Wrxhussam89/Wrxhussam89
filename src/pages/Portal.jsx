@@ -2,8 +2,10 @@ import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { getSession, login, register, logout, getMyRequests, getQuotation, respondToQuotation, isDemoMode } from '../api/client'
 import { STATUS_PIPELINE } from '../carBrands'
+import { useT } from '../i18n'
 
 function StatusTimeline({ currentStatus }) {
+  const { t } = useT()
   const pipeline = STATUS_PIPELINE.filter((s) => s !== 'Cancelled')
   const currentIdx = pipeline.indexOf(currentStatus)
   const isCancelled = currentStatus === 'Cancelled'
@@ -13,7 +15,7 @@ function StatusTimeline({ currentStatus }) {
       <div className="status-timeline">
         <div className="timeline-step cancelled">
           <div className="timeline-dot" />
-          <span className="timeline-label">Cancelled</span>
+          <span className="timeline-label">{t('status.Cancelled')}</span>
         </div>
       </div>
     )
@@ -33,7 +35,7 @@ function StatusTimeline({ currentStatus }) {
               )}
             </div>
             {i < pipeline.length - 1 && <div className="timeline-line" />}
-            <span className="timeline-label">{step}</span>
+            <span className="timeline-label">{t(`status.${step}`)}</span>
           </div>
         )
       })}
@@ -45,6 +47,7 @@ function QuotationCard({ requestId }) {
   const [quotation, setQuotation] = useState(null)
   const [loading, setLoading] = useState(true)
   const [responding, setResponding] = useState(false)
+  const { t } = useT()
 
   useEffect(() => {
     getQuotation(requestId)
@@ -68,13 +71,14 @@ function QuotationCard({ requestId }) {
 
   const isDetailed = quotation.mode === 'detailed'
   const isPending = quotation.status === 'pending'
+  const jod = t('quotation.jod')
 
   return (
     <div className="quotation-card">
       <div className="quotation-header">
-        <h4>Quotation</h4>
+        <h4>{t('quotation.heading')}</h4>
         <span className={`badge ${quotation.status === 'approved' ? '' : quotation.status === 'rejected' ? 'badge-danger' : 'badge-pending'}`}>
-          {quotation.status === 'pending' ? 'Awaiting Response' : quotation.status === 'approved' ? 'Approved' : 'Rejected'}
+          {quotation.status === 'pending' ? t('quotation.awaitingResponse') : quotation.status === 'approved' ? t('quotation.approved') : t('quotation.rejected')}
         </span>
       </div>
 
@@ -82,38 +86,38 @@ function QuotationCard({ requestId }) {
         <>
           <table className="quotation-table">
             <thead>
-              <tr><th>Item</th><th>Qty</th><th>Price</th><th>Total</th></tr>
+              <tr><th>{t('quotation.item')}</th><th>{t('quotation.qty')}</th><th>{t('quotation.price')}</th><th>{t('quotation.total')}</th></tr>
             </thead>
             <tbody>
               {(quotation.items || []).map((item, i) => (
                 <tr key={i}>
                   <td>{item.description}</td>
                   <td>{item.qty}</td>
-                  <td>{item.price} JOD</td>
-                  <td>{(item.qty * item.price).toFixed(2)} JOD</td>
+                  <td>{item.price} {jod}</td>
+                  <td>{(item.qty * item.price).toFixed(2)} {jod}</td>
                 </tr>
               ))}
             </tbody>
           </table>
           {quotation.laborCost > 0 && (
             <div className="quotation-line">
-              <span>Labor</span><span>{quotation.laborCost} JOD</span>
+              <span>{t('quotation.labor')}</span><span>{quotation.laborCost} {jod}</span>
             </div>
           )}
           {quotation.taxPercent > 0 && (
             <div className="quotation-line">
-              <span>Tax ({quotation.taxPercent}%)</span>
-              <span>{((quotation.subtotal || 0) * quotation.taxPercent / 100).toFixed(2)} JOD</span>
+              <span>{t('quotation.tax', { percent: quotation.taxPercent })}</span>
+              <span>{((quotation.subtotal || 0) * quotation.taxPercent / 100).toFixed(2)} {jod}</span>
             </div>
           )}
           <div className="quotation-line quotation-total">
-            <span>Total</span><span>{quotation.total} JOD</span>
+            <span>{t('quotation.total')}</span><span>{quotation.total} {jod}</span>
           </div>
         </>
       ) : (
         <>
           <div className="quotation-line quotation-total">
-            <span>Total</span><span>{quotation.total} JOD</span>
+            <span>{t('quotation.total')}</span><span>{quotation.total} {jod}</span>
           </div>
           {quotation.description && <p className="muted" style={{ marginTop: 8 }}>{quotation.description}</p>}
         </>
@@ -121,17 +125,17 @@ function QuotationCard({ requestId }) {
 
       {quotation.estimatedTime && (
         <p className="muted" style={{ fontSize: '0.85rem', marginTop: 8 }}>
-          Estimated time: {quotation.estimatedTime}
+          {t('quotation.estimatedTime', { time: quotation.estimatedTime })}
         </p>
       )}
 
       {isPending && (
         <div className="quotation-actions">
           <button className="btn btn-primary" disabled={responding} onClick={() => handleRespond('approved')}>
-            {responding ? '...' : 'Approve'}
+            {responding ? '...' : t('quotation.approve')}
           </button>
           <button className="btn btn-outline btn-danger-outline" disabled={responding} onClick={() => handleRespond('rejected')}>
-            {responding ? '...' : 'Reject'}
+            {responding ? '...' : t('quotation.reject')}
           </button>
         </div>
       )}
@@ -140,27 +144,29 @@ function QuotationCard({ requestId }) {
 }
 
 function RequestDetail({ request, onBack }) {
+  const { t, lang } = useT()
+
   return (
     <div className="request-detail">
       <button className="btn btn-outline" onClick={onBack} style={{ marginBottom: 20 }}>
-        Back to Requests
+        {t('portal.backToRequests')}
       </button>
       <div className="request-detail-header">
         <div>
           <h2 style={{ marginBottom: 4 }}>
-            {request.type === 'remote-programming' ? 'Remote Programming' : 'Service Booking'}
+            {request.type === 'remote-programming' ? t('portal.remoteProgramming') : t('portal.serviceBooking')}
           </h2>
           <p className="muted" style={{ marginBottom: 0 }}>
             {request.carMake} {request.carModel} {request.carYear && `(${request.carYear})`}
           </p>
           <p className="muted" style={{ fontSize: '0.85rem' }}>
-            VIN: {request.vin || 'N/A'} · Submitted {new Date(request.createdAt).toLocaleDateString()}
+            {t('common.vin')} {request.vin || t('common.na')} · {t('common.submitted')} {new Date(request.createdAt).toLocaleDateString(lang === 'ar' ? 'ar-JO' : 'en-US')}
           </p>
         </div>
       </div>
 
       <div className="card" style={{ marginTop: 20, marginBottom: 20 }}>
-        <h3 style={{ marginBottom: 16 }}>Service Progress</h3>
+        <h3 style={{ marginBottom: 16 }}>{t('portal.serviceProgress')}</h3>
         <StatusTimeline currentStatus={request.status} />
       </div>
 
@@ -168,7 +174,7 @@ function RequestDetail({ request, onBack }) {
 
       {request.notes && (
         <div className="card" style={{ marginTop: 16 }}>
-          <h4 style={{ marginBottom: 8 }}>Notes</h4>
+          <h4 style={{ marginBottom: 8 }}>{t('portal.notes')}</h4>
           <p className="muted">{request.notes}</p>
         </div>
       )}
@@ -181,12 +187,13 @@ function LoginForm({ onLoggedIn }) {
   const [password, setPassword] = useState('')
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
+  const { t } = useT()
 
   async function handleSubmit(e) {
     e.preventDefault()
     setError('')
     if (!email.trim() || !password.trim()) {
-      setError('Enter your email and password.')
+      setError(t('portal.errLoginFields'))
       return
     }
     setLoading(true)
@@ -194,7 +201,7 @@ function LoginForm({ onLoggedIn }) {
       await login(email.trim(), password)
       onLoggedIn()
     } catch (err) {
-      setError(err.message || 'Could not sign in.')
+      setError(err.message || t('portal.errLogin'))
     } finally {
       setLoading(false)
     }
@@ -204,21 +211,20 @@ function LoginForm({ onLoggedIn }) {
     <form className="form-card" onSubmit={handleSubmit} noValidate>
       {isDemoMode && (
         <div className="notice">
-          <strong>Demo mode:</strong> no backend connected yet — enter any email and password
-          to preview the portal.
+          <strong>{t('common.demoMode')}</strong> {t('portal.demoLogin')}
         </div>
       )}
       <div className="form-row">
-        <label htmlFor="login-email">Email Address</label>
+        <label htmlFor="login-email">{t('portal.emailLabel')}</label>
         <input id="login-email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} />
       </div>
       <div className="form-row">
-        <label htmlFor="login-password">Password</label>
+        <label htmlFor="login-password">{t('portal.passwordLabel')}</label>
         <input id="login-password" type="password" value={password} onChange={(e) => setPassword(e.target.value)} />
       </div>
       {error && <div className="form-error">{error}</div>}
       <button type="submit" className="btn btn-primary" disabled={loading} style={{ width: '100%' }}>
-        {loading ? 'Signing in...' : 'Sign In'}
+        {loading ? t('portal.signingIn') : t('portal.signIn')}
       </button>
     </form>
   )
@@ -231,12 +237,13 @@ function SignUpForm({ onDone }) {
   const [password, setPassword] = useState('')
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
+  const { t } = useT()
 
   async function handleSubmit(e) {
     e.preventDefault()
     setError('')
     if (!name.trim() || !email.trim() || !phone.trim() || !password.trim()) {
-      setError('All fields are required.')
+      setError(t('portal.errSignupFields'))
       return
     }
     setLoading(true)
@@ -244,7 +251,7 @@ function SignUpForm({ onDone }) {
       await register({ name: name.trim(), email: email.trim(), phone: phone.trim(), password })
       onDone()
     } catch (err) {
-      setError(err.message || 'Could not create account.')
+      setError(err.message || t('portal.errSignup'))
     } finally {
       setLoading(false)
     }
@@ -254,29 +261,28 @@ function SignUpForm({ onDone }) {
     <form className="form-card" onSubmit={handleSubmit} noValidate>
       {isDemoMode && (
         <div className="notice">
-          <strong>Demo mode:</strong> no backend connected yet — accounts are stored in your
-          browser only.
+          <strong>{t('common.demoMode')}</strong> {t('portal.demoSignup')}
         </div>
       )}
       <div className="form-row">
-        <label htmlFor="reg-name">Full Name</label>
+        <label htmlFor="reg-name">{t('portal.nameLabel')}</label>
         <input id="reg-name" type="text" value={name} onChange={(e) => setName(e.target.value)} />
       </div>
       <div className="form-row">
-        <label htmlFor="reg-email">Email Address</label>
+        <label htmlFor="reg-email">{t('portal.emailLabel')}</label>
         <input id="reg-email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} />
       </div>
       <div className="form-row">
-        <label htmlFor="reg-phone">Phone Number</label>
+        <label htmlFor="reg-phone">{t('portal.phoneLabel')}</label>
         <input id="reg-phone" type="tel" value={phone} onChange={(e) => setPhone(e.target.value)} />
       </div>
       <div className="form-row">
-        <label htmlFor="reg-password">Password</label>
+        <label htmlFor="reg-password">{t('portal.passwordLabel')}</label>
         <input id="reg-password" type="password" value={password} onChange={(e) => setPassword(e.target.value)} />
       </div>
       {error && <div className="form-error">{error}</div>}
       <button type="submit" className="btn btn-primary" disabled={loading} style={{ width: '100%' }}>
-        {loading ? 'Creating account...' : 'Create Account'}
+        {loading ? t('portal.creatingAccount') : t('portal.createAccount')}
       </button>
     </form>
   )
@@ -284,15 +290,16 @@ function SignUpForm({ onDone }) {
 
 function AuthPanel({ onAuthed }) {
   const [tab, setTab] = useState('login')
+  const { t } = useT()
 
   return (
     <>
       <div className="tabs">
         <button className={`tab ${tab === 'login' ? 'active' : ''}`} onClick={() => setTab('login')}>
-          Sign In
+          {t('portal.signIn')}
         </button>
         <button className={`tab ${tab === 'signup' ? 'active' : ''}`} onClick={() => setTab('signup')}>
-          Create Account
+          {t('portal.createAccount')}
         </button>
       </div>
       {tab === 'login' ? (
@@ -309,12 +316,13 @@ function Dashboard({ session, onLogout }) {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
   const [selected, setSelected] = useState(null)
+  const { t, lang } = useT()
 
   useEffect(() => {
     let cancelled = false
     getMyRequests()
       .then((data) => { if (!cancelled) setRequests(data) })
-      .catch((err) => { if (!cancelled) setError(err.message || 'Could not load your requests.') })
+      .catch((err) => { if (!cancelled) setError(err.message || t('portal.errLoadRequests')) })
       .finally(() => { if (!cancelled) setLoading(false) })
     return () => { cancelled = true }
   }, [])
@@ -331,30 +339,28 @@ function Dashboard({ session, onLogout }) {
     <div className="container" style={{ maxWidth: 800 }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24, flexWrap: 'wrap', gap: 12 }}>
         <div>
-          <h2 style={{ marginBottom: 4 }}>Welcome back</h2>
+          <h2 style={{ marginBottom: 4 }}>{t('portal.welcomeBack')}</h2>
           <p className="muted" style={{ marginBottom: 0 }}>{session.email}</p>
         </div>
         <div style={{ display: 'flex', gap: 12 }}>
-          <Link to="/remote-programming" className="btn btn-outline">New Remote Request</Link>
-          <button className="btn btn-outline" onClick={onLogout}>Sign Out</button>
+          <Link to="/remote-programming" className="btn btn-outline">{t('portal.newRemote')}</Link>
+          <button className="btn btn-outline" onClick={onLogout}>{t('portal.signOut')}</button>
         </div>
       </div>
 
       {isDemoMode && (
         <div className="notice">
-          <strong>Demo mode:</strong> this list reads from your browser's local storage, not a
-          real ERP. Set <code>VITE_API_BASE_URL</code> to your backend to pull live data from
-          your ERP system.
+          <strong>{t('common.demoMode')}</strong> {t('portal.demoList', { code: 'VITE_API_BASE_URL' })}
         </div>
       )}
 
-      {loading && <p className="muted">Loading your requests...</p>}
+      {loading && <p className="muted">{t('portal.loadingRequests')}</p>}
       {error && <div className="form-error">{error}</div>}
 
       {!loading && !error && requests.length === 0 && (
         <div className="card text-center">
-          <p className="muted">No service requests yet.</p>
-          <Link to="/booking" className="btn btn-primary">Book a Service</Link>
+          <p className="muted">{t('portal.noRequests')}</p>
+          <Link to="/booking" className="btn btn-primary">{t('common.bookService')}</Link>
         </div>
       )}
 
@@ -365,15 +371,15 @@ function Dashboard({ session, onLogout }) {
             key={r.id}
             onClick={() => setSelected(r)}
           >
-            <div style={{ textAlign: 'left' }}>
+            <div>
               <h3 style={{ marginBottom: 4 }}>
-                {r.type === 'remote-programming' ? 'Remote Programming' : 'Service Booking'} — {r.carMake} {r.carModel}
+                {r.type === 'remote-programming' ? t('portal.remoteProgramming') : t('portal.serviceBooking')} — {r.carMake} {r.carModel}
               </h3>
               <div className="request-item-meta muted">
-                VIN: {r.vin || 'N/A'} · Submitted {new Date(r.createdAt).toLocaleDateString()}
+                {t('common.vin')} {r.vin || t('common.na')} · {t('common.submitted')} {new Date(r.createdAt).toLocaleDateString(lang === 'ar' ? 'ar-JO' : 'en-US')}
               </div>
             </div>
-            <span className={`badge ${r.status === 'Cancelled' ? 'badge-danger' : ''}`}>{r.status}</span>
+            <span className={`badge ${r.status === 'Cancelled' ? 'badge-danger' : ''}`}>{t(`status.${r.status}`)}</span>
           </button>
         ))}
       </div>
@@ -383,6 +389,7 @@ function Dashboard({ session, onLogout }) {
 
 function Portal() {
   const [session, setSession] = useState(() => getSession())
+  const { t } = useT()
 
   function handleLogout() {
     logout()
@@ -397,8 +404,8 @@ function Portal() {
         ) : (
           <div className="container">
             <div className="section-head">
-              <h1>Customer Portal</h1>
-              <p className="muted">Track your service and remote programming requests in one place.</p>
+              <h1>{t('portal.heading')}</h1>
+              <p className="muted">{t('portal.sub')}</p>
             </div>
             <AuthPanel onAuthed={() => setSession(getSession())} />
           </div>
