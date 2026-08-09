@@ -1,15 +1,12 @@
-// Talks to YOUR backend, which in turn talks to your ERP system.
-// Never call the ERP API directly from the browser - that would ship its
-// credentials to every visitor. Point VITE_API_BASE_URL at your own backend
-// (a small server you control) that holds the real ERP API key server-side
-// and proxies these requests to it.
-//
-// Until VITE_API_BASE_URL is set, the client runs in demo mode: requests are
-// stored in localStorage so the whole site (forms, portal, statuses) is
-// still fully clickable/testable without a backend.
+import { account, databases, DB_ID, COL, ID, Query, PROJECT_ID } from './appwrite'
 
-const API_BASE = import.meta.env.VITE_API_BASE_URL || ''
-export const isDemoMode = !API_BASE
+// When VITE_APPWRITE_PROJECT_ID is set, all data flows through Appwrite.
+// Without it, the site runs in demo mode with localStorage — fully clickable
+// and testable without any backend.
+
+export const isDemoMode = !PROJECT_ID
+
+// ── Demo-mode helpers (localStorage) ───────────────────────────────
 
 const REQUESTS_KEY = 'demo_service_requests'
 const SESSION_KEY = 'demo_portal_session'
@@ -21,58 +18,34 @@ const ADMIN_DEMO_CODE = import.meta.env.VITE_ADMIN_DEMO_CODE || 'evmaster-admin'
 function demoDelay(value) {
   return new Promise((resolve) => setTimeout(() => resolve(value), 350))
 }
+function readStore(key) { try { return JSON.parse(localStorage.getItem(key)) || [] } catch { return [] } }
+function writeStore(key, data) { localStorage.setItem(key, JSON.stringify(data)) }
 
-function readDemoRequests() {
-  try {
-    return JSON.parse(localStorage.getItem(REQUESTS_KEY)) || []
-  } catch {
-    return []
-  }
+// ── Session ────────────────────────────────────────────────────────
+
+const AW_SESSION_KEY = 'aw_session'
+
+function saveAwSession(data) {
+  localStorage.setItem(AW_SESSION_KEY, JSON.stringify(data))
 }
-
-function writeDemoRequests(list) {
-  localStorage.setItem(REQUESTS_KEY, JSON.stringify(list))
-}
-
-function readDemoQuotations() {
-  try {
-    return JSON.parse(localStorage.getItem(QUOTATIONS_KEY)) || []
-  } catch {
-    return []
-  }
-}
-
-function writeDemoQuotations(list) {
-  localStorage.setItem(QUOTATIONS_KEY, JSON.stringify(list))
-}
-
-function authHeaders() {
-  const session = getSession()
-  return session?.token ? { Authorization: `Bearer ${session.token}` } : {}
-}
-
-async function request(path, options = {}) {
-  const res = await fetch(`${API_BASE}${path}`, {
-    ...options,
-    headers: { 'Content-Type': 'application/json', ...authHeaders(), ...options.headers },
-  })
-  if (!res.ok) {
-    const text = await res.text().catch(() => '')
-    throw new Error(text || `Request failed (${res.status})`)
-  }
-  return res.status === 204 ? null : res.json()
+function clearAwSession() {
+  localStorage.removeItem(AW_SESSION_KEY)
 }
 
 export function getSession() {
-  try {
-    return JSON.parse(localStorage.getItem(SESSION_KEY))
-  } catch {
-    return null
+  if (isDemoMode) {
+    try { return JSON.parse(localStorage.getItem(SESSION_KEY)) } catch { return null }
   }
+  try { return JSON.parse(localStorage.getItem(AW_SESSION_KEY)) } catch { return null }
 }
 
 export function logout() {
-  localStorage.removeItem(SESSION_KEY)
+  if (isDemoMode) {
+    localStorage.removeItem(SESSION_KEY)
+    return
+  }
+  clearAwSession()
+  account.deleteSession('current').catch(() => {})
 }
 
 export async function login(email, password) {
@@ -81,119 +54,129 @@ export async function login(email, password) {
     localStorage.setItem(SESSION_KEY, JSON.stringify(session))
     return demoDelay(session)
   }
-  const session = await request('/auth/login', {
-    method: 'POST',
-    body: JSON.stringify({ email, password }),
-  })
-  localStorage.setItem(SESSION_KEY, JSON.stringify(session))
+  await account.createEmailPasswordSession(email, password)
+  const user = await account.get()
+  const session = { id: user.$id, email: user.email, name: user.name, token: 'aw' }
+  saveAwSession(session)
   return session
-}
-
-function readDemoCustomers() {
-  try { return JSON.parse(localStorage.getItem(CUSTOMERS_KEY)) || [] } catch { return [] }
-}
-function writeDemoCustomers(list) {
-  localStorage.setItem(CUSTOMERS_KEY, JSON.stringify(list))
 }
 
 export async function register({ name, email, phone, password }) {
   if (isDemoMode) {
-    const customers = readDemoCustomers()
-    if (customers.some((c) => c.email === email)) {
-      throw new Error('An account with that email already exists.')
-    }
+    const customers = readStore(CUSTOMERS_KEY)
+    if (customers.some((c) => c.email === email)) throw new Error('An account with that email already exists.')
     customers.push({ name, email, phone, createdAt: new Date().toISOString() })
-    writeDemoCustomers(customers)
+    writeStore(CUSTOMERS_KEY, customers)
     const session = { token: 'demo-token', email, name }
     localStorage.setItem(SESSION_KEY, JSON.stringify(session))
     return demoDelay(session)
   }
-  const session = await request('/auth/register', {
-    method: 'POST',
-    body: JSON.stringify({ name, email, phone, password }),
-  })
-  localStorage.setItem(SESSION_KEY, JSON.stringify(session))
+  await account.create(ID.unique(), email, password, name)
+  await account.createEmailPasswordSession(email, password)
+  const user = await account.get()
+  // Store profile with phone number
+  await databases.createDocument(DB_ID, COL.profiles, user.$id, { name, email, phone })
+  const session = { id: user.$id, email: user.email, name: user.name, token: 'aw' }
+  saveAwSession(session)
   return session
 }
 
-// Submits a service request. `type` is 'booking' or 'remote-programming'.
+// ── Service Requests ───────────────────────────────────────────────
+
 export async function submitServiceRequest(payload) {
   if (isDemoMode) {
-    const list = readDemoRequests()
-    const record = {
-      id: crypto.randomUUID(),
-      status: 'Received',
-      createdAt: new Date().toISOString(),
-      ...payload,
-    }
+    const list = readStore(REQUESTS_KEY)
+    const record = { id: crypto.randomUUID(), status: 'Received', createdAt: new Date().toISOString(), ...payload }
     list.unshift(record)
-    writeDemoRequests(list)
+    writeStore(REQUESTS_KEY, list)
     return demoDelay(record)
   }
-  return request('/customer/requests', {
-    method: 'POST',
-    body: JSON.stringify(payload),
+  const session = getSession()
+  const doc = await databases.createDocument(DB_ID, COL.requests, ID.unique(), {
+    ...payload,
+    userId: session?.id || null,
+    status: 'Received',
   })
+  return mapRequest(doc)
 }
 
 export async function getMyRequests() {
   if (isDemoMode) {
     const session = getSession()
-    const list = readDemoRequests().filter((r) => r.email === session?.email)
-    return demoDelay(list)
+    return demoDelay(readStore(REQUESTS_KEY).filter((r) => r.email === session?.email))
   }
-  return request('/customer/requests')
+  const session = getSession()
+  if (!session?.id) return []
+  const res = await databases.listDocuments(DB_ID, COL.requests, [
+    Query.equal('userId', session.id),
+    Query.orderDesc('$createdAt'),
+    Query.limit(100),
+  ])
+  return res.documents.map(mapRequest)
 }
 
 export async function getQuotation(requestId) {
   if (isDemoMode) {
-    const quotations = readDemoQuotations()
-    const q = quotations.find((q) => q.requestId === requestId)
+    const q = readStore(QUOTATIONS_KEY).find((q) => q.requestId === requestId)
     return demoDelay(q || null)
   }
-  return request(`/customer/requests/${requestId}/quotation`)
+  const res = await databases.listDocuments(DB_ID, COL.quotations, [
+    Query.equal('requestId', requestId),
+    Query.limit(1),
+  ])
+  return res.documents.length ? mapQuotation(res.documents[0]) : null
 }
 
 export async function respondToQuotation(requestId, action) {
   if (isDemoMode) {
-    const quotations = readDemoQuotations()
+    const quotations = readStore(QUOTATIONS_KEY)
     const idx = quotations.findIndex((q) => q.requestId === requestId)
     if (idx === -1) throw new Error('Quotation not found.')
     quotations[idx] = { ...quotations[idx], status: action, respondedAt: new Date().toISOString() }
-    writeDemoQuotations(quotations)
-    const requests = readDemoRequests()
+    writeStore(QUOTATIONS_KEY, quotations)
+    const requests = readStore(REQUESTS_KEY)
     const ri = requests.findIndex((r) => r.id === requestId)
     if (ri !== -1) {
       requests[ri] = { ...requests[ri], status: action === 'approved' ? 'Approved' : 'Cancelled' }
-      writeDemoRequests(requests)
+      writeStore(REQUESTS_KEY, requests)
     }
     return demoDelay(quotations[idx])
   }
-  return request(`/customer/requests/${requestId}/quotation`, {
-    method: 'PATCH',
-    body: JSON.stringify({ action }),
+  const res = await databases.listDocuments(DB_ID, COL.quotations, [
+    Query.equal('requestId', requestId),
+    Query.limit(1),
+  ])
+  if (!res.documents.length) throw new Error('Quotation not found.')
+  const doc = res.documents[0]
+  await databases.updateDocument(DB_ID, COL.quotations, doc.$id, {
+    status: action,
+    respondedAt: new Date().toISOString(),
   })
+  // Update request status
+  await databases.updateDocument(DB_ID, COL.requests, requestId, {
+    status: action === 'approved' ? 'Approved' : 'Cancelled',
+  })
+  return { ...mapQuotation(doc), status: action }
 }
 
-// --- Admin ---
+// ── Admin ──────────────────────────────────────────────────────────
+
+const ADMIN_LABEL = 'admin'
 
 export function getAdminSession() {
-  try { return JSON.parse(localStorage.getItem(ADMIN_SESSION_KEY)) } catch { return null }
+  if (isDemoMode) {
+    try { return JSON.parse(localStorage.getItem(ADMIN_SESSION_KEY)) } catch { return null }
+  }
+  try {
+    const s = JSON.parse(localStorage.getItem(AW_SESSION_KEY))
+    return s?.isAdmin ? s : null
+  } catch { return null }
 }
-export function adminLogout() { localStorage.removeItem(ADMIN_SESSION_KEY) }
 
-function adminAuthHeaders() {
-  const s = getAdminSession()
-  return s?.token ? { Authorization: `Bearer ${s.token}` } : {}
-}
-
-async function adminRequest(path, options = {}) {
-  const res = await fetch(`${API_BASE}${path}`, {
-    ...options,
-    headers: { 'Content-Type': 'application/json', ...adminAuthHeaders(), ...options.headers },
-  })
-  if (!res.ok) throw new Error((await res.text().catch(() => '')) || `Request failed (${res.status})`)
-  return res.status === 204 ? null : res.json()
+export function adminLogout() {
+  if (isDemoMode) { localStorage.removeItem(ADMIN_SESSION_KEY); return }
+  clearAwSession()
+  account.deleteSession('current').catch(() => {})
 }
 
 export async function adminLogin(code) {
@@ -203,63 +186,132 @@ export async function adminLogin(code) {
     localStorage.setItem(ADMIN_SESSION_KEY, JSON.stringify(session))
     return demoDelay(session)
   }
-  const session = await request('/admin/login', { method: 'POST', body: JSON.stringify({ code }) })
-  localStorage.setItem(ADMIN_SESSION_KEY, JSON.stringify(session))
+  // Admin logs in with email + password. The "code" field is the password;
+  // the admin email is stored in VITE_ADMIN_EMAIL.
+  const adminEmail = import.meta.env.VITE_ADMIN_EMAIL
+  if (!adminEmail) throw new Error('Admin email not configured.')
+  await account.createEmailPasswordSession(adminEmail, code)
+  const user = await account.get()
+  const hasAdminLabel = (user.labels || []).includes(ADMIN_LABEL)
+  if (!hasAdminLabel) {
+    await account.deleteSession('current')
+    throw new Error('Access denied — not an admin account.')
+  }
+  const session = { id: user.$id, email: user.email, name: user.name, token: 'aw', isAdmin: true }
+  saveAwSession(session)
   return session
 }
 
 export async function getAllRequests() {
-  if (isDemoMode) return demoDelay(readDemoRequests())
-  return adminRequest('/admin/requests')
+  if (isDemoMode) return demoDelay(readStore(REQUESTS_KEY))
+  const res = await databases.listDocuments(DB_ID, COL.requests, [
+    Query.orderDesc('$createdAt'),
+    Query.limit(200),
+  ])
+  return res.documents.map(mapRequest)
 }
 
 export async function updateRequestStatus(id, status) {
   if (isDemoMode) {
-    const list = readDemoRequests()
+    const list = readStore(REQUESTS_KEY)
     const idx = list.findIndex((r) => r.id === id)
     if (idx === -1) throw new Error('Request not found.')
     list[idx] = { ...list[idx], status }
-    writeDemoRequests(list)
+    writeStore(REQUESTS_KEY, list)
     return demoDelay(list[idx])
   }
-  return adminRequest(`/admin/requests/${id}`, { method: 'PATCH', body: JSON.stringify({ status }) })
+  const doc = await databases.updateDocument(DB_ID, COL.requests, id, { status })
+  return mapRequest(doc)
 }
 
 export async function saveQuotation(requestId, quotation) {
   if (isDemoMode) {
-    const quotations = readDemoQuotations()
+    const quotations = readStore(QUOTATIONS_KEY)
     const existing = quotations.findIndex((q) => q.requestId === requestId)
     const record = {
       id: existing >= 0 ? quotations[existing].id : crypto.randomUUID(),
-      requestId,
-      status: 'pending',
-      createdAt: new Date().toISOString(),
-      ...quotation,
+      requestId, status: 'pending', createdAt: new Date().toISOString(), ...quotation,
     }
-    if (existing >= 0) {
-      quotations[existing] = record
-    } else {
-      quotations.push(record)
-    }
-    writeDemoQuotations(quotations)
-    const requests = readDemoRequests()
+    if (existing >= 0) quotations[existing] = record
+    else quotations.push(record)
+    writeStore(QUOTATIONS_KEY, quotations)
+    const requests = readStore(REQUESTS_KEY)
     const ri = requests.findIndex((r) => r.id === requestId)
-    if (ri !== -1) {
-      requests[ri] = { ...requests[ri], status: 'Quotation Sent' }
-      writeDemoRequests(requests)
-    }
+    if (ri !== -1) { requests[ri] = { ...requests[ri], status: 'Quotation Sent' }; writeStore(REQUESTS_KEY, requests) }
     return demoDelay(record)
   }
-  return adminRequest(`/admin/requests/${requestId}/quotation`, {
-    method: 'POST',
-    body: JSON.stringify(quotation),
-  })
+  // Serialize items array to JSON string for Appwrite storage
+  const data = {
+    requestId,
+    status: 'pending',
+    mode: quotation.mode,
+    total: quotation.total,
+    description: quotation.description || '',
+    estimatedTime: quotation.estimatedTime || '',
+    laborCost: quotation.laborCost || 0,
+    taxPercent: quotation.taxPercent || 0,
+    subtotal: quotation.subtotal || 0,
+    itemsJson: quotation.items ? JSON.stringify(quotation.items) : '[]',
+  }
+  // Check for existing quotation
+  const existing = await databases.listDocuments(DB_ID, COL.quotations, [
+    Query.equal('requestId', requestId), Query.limit(1),
+  ])
+  let doc
+  if (existing.documents.length) {
+    doc = await databases.updateDocument(DB_ID, COL.quotations, existing.documents[0].$id, data)
+  } else {
+    doc = await databases.createDocument(DB_ID, COL.quotations, ID.unique(), data)
+  }
+  await databases.updateDocument(DB_ID, COL.requests, requestId, { status: 'Quotation Sent' })
+  return mapQuotation(doc)
 }
 
 export async function getAdminQuotation(requestId) {
   if (isDemoMode) {
-    const quotations = readDemoQuotations()
-    return demoDelay(quotations.find((q) => q.requestId === requestId) || null)
+    return demoDelay(readStore(QUOTATIONS_KEY).find((q) => q.requestId === requestId) || null)
   }
-  return adminRequest(`/admin/requests/${requestId}/quotation`)
+  const res = await databases.listDocuments(DB_ID, COL.quotations, [
+    Query.equal('requestId', requestId), Query.limit(1),
+  ])
+  return res.documents.length ? mapQuotation(res.documents[0]) : null
+}
+
+// ── Mappers ────────────────────────────────────────────────────────
+
+function mapRequest(doc) {
+  return {
+    id: doc.$id,
+    type: doc.type,
+    name: doc.name,
+    email: doc.email,
+    phone: doc.phone,
+    carMake: doc.carMake,
+    carModel: doc.carModel,
+    carYear: doc.carYear || '',
+    vin: doc.vin || '',
+    notes: doc.notes || '',
+    preferredDate: doc.preferredDate || '',
+    status: doc.status,
+    userId: doc.userId || null,
+    createdAt: doc.$createdAt,
+  }
+}
+
+function mapQuotation(doc) {
+  return {
+    id: doc.$id,
+    requestId: doc.requestId,
+    status: doc.status,
+    mode: doc.mode,
+    total: doc.total,
+    description: doc.description || '',
+    estimatedTime: doc.estimatedTime || '',
+    laborCost: doc.laborCost || 0,
+    taxPercent: doc.taxPercent || 0,
+    subtotal: doc.subtotal || 0,
+    items: doc.itemsJson ? JSON.parse(doc.itemsJson) : [],
+    createdAt: doc.$createdAt,
+    respondedAt: doc.respondedAt || null,
+  }
 }
